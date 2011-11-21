@@ -5,7 +5,7 @@ permalink: call-an-external-command-from-java.html
 ---
 <p>Java provides the <code>exec(String)</code> method on the <a href="http://java.sun.com/j2se/1.4.1/docs/api/java/lang/Runtime.html"><code>java.lang.Runtime</code></a> class for the purpose of calling external commands, but that's not necessarily what's desired, as it leaves filling of <code>stdin</code> and emptying of <code>stdout</code> and <code>stderr</code> to the programmer. In practice, these three are all buffered, and there is no problem because the external process neither consumes nor produces much data.</p>
 
-<p>In the case where the external program will receive or produce a large amount of data, this post provides an example of how to use multiple threads the manage the I/O for the <code>java.lang.Process</code>. The example is probably about 75% cooked, and it is possible to make it fancier by adding hooks to destroy the process, etc.  (The source code for the example is <a href="http://mult.ifario.us/files/CommandRunner.java" title="source code for the technique described in this post">available</a>.)</p>
+<p>In the case where the external program will receive or produce a large amount of data, this post provides an example of how to use multiple threads the manage the I/O for the <code>java.lang.Process</code>. The example is probably about 75% cooked, and it is possible to make it fancier by adding hooks to destroy the process, etc.  (The source code for the example is <a href="http://blog.prb.io/files/CommandRunner.java" title="source code for the technique described in this post">available</a>.)</p>
 
 <h3>Thanks, Doug Lea</h3>
 

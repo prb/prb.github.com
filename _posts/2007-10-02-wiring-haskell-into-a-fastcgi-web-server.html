@@ -6,9 +6,9 @@ categories: [lighttpd, apache, mod_fastcgi, mod_fcgid, haskell, fastcgi, blog]
 ---
 <p>Herein part six in my hobby project to rewrite my personal
 publishing software in Haskell.  In <a
-href="http://mult.ifario.us/articles/2007/03/04/stm-and-io">part
+href="http://blog.prb.io/stm-and-io.html">part
 five</a> (and its <a
-href="http://mult.ifario.us/articles/2007/03/13/stm-and-io-redux">addendum</a>),
+href="http://blog.prb.io/stm-and-io-redux.html">addendum</a>),
 I roughed-out a persistence and concurrency model for the back-end.
 The next two pieces are rendering content (which will be done
 programmatically using the <a
@@ -41,7 +41,7 @@ respectively).  The <code>forkIO</code> flavor uses Haskell's
 internally managed, lightweight threads, and the <code>forkOS</code>
 flavor uses threads from the underlying operating system.  (For some
 perspective on what an OS thread really means, take a look at my <a
-href="http://mult.ifario.us/articles/2006/05/11/more-on-erlang-performance-and-threading">post</a>
+href="http://blog.prb.io/more-on-erlang-performance-and-threading.html">post</a>
 on SMP Erlang on Mac OS.)  The FastCGI binding library provides a
 mechanism to use <code>forkIO</code>, <code>forkOS</code>, or some
 other mechanism to assign a worker thread to a request, and I want to
@@ -107,13 +107,13 @@ sudo runghc Setup.hs install</pre>
 promoted into core GHC packages and rearranged a bit, but no
 meaningful code changes beyond some of the import statements and the
 <code>fastcgi.cabal</code> file are required.  (I've sent a <a
-href="http://mult.ifario.us/files/fastcgi.diff">patch</a> to the
+href="http://blog.prb.io/files/fastcgi.diff">patch</a> to the
 maintainer.)</p>
 
 <h3>A Simple FastCGI Handler for Process/Thread Information</h3>
 
 <p>The following short Haskell program (<a
-href="http://mult.ifario.us/files/test_IO.hs">test_IO.hs</a>) sends
+href="http://blog.prb.io/files/test_IO.hs">test_IO.hs</a>) sends
 back a plain text response with process and thread information:</p>
 
 <pre class="code">import Control.Concurrent
@@ -140,7 +140,7 @@ example that uses the multi-threaded API.)  To build it:</p>
 Linking test_IO.fcgi ...</pre>
 
 <p>The equivalent program (<a
-href="http://mult.ifario.us/files/test_OS.hs">test_OS.hs</a>) with
+href="http://blog.prb.io/files/test_OS.hs">test_OS.hs</a>) with
 <code>forkOS</code> in place of <code>forkIO</code> does the job for
 OS threads.</p>
 
@@ -153,7 +153,7 @@ thread ID goes from one digit to two to three, etc.  My current
 favorite is Jef Pozkanzer's simple <a
 href="http://www.acme.com/software/http_load/"><code>http_load</code></a>
 with a tiny <a
-href="http://mult.ifario.us/files/http_load.c.diff">tweak</a> to show
+href="http://blog.prb.io/files/http_load.c.diff">tweak</a> to show
 the response code if a byte count comes out off.  Using a different
 tool, e.g., <a
 href="http://httpd.apache.org/docs/2.0/programs/ab.html"><code>ab</code></a>

@@ -8,7 +8,7 @@ categories: [spam, mail, bogofilter, macosx, qpopper, procmail, applescript]
 
 <p>For motivation, the <a href="http://yro.slashdot.org/article.pl?sid=04/01/14/0037231&amp;mode=thread&amp;tid=111&amp;tid=126&amp;tid=95">recent rash</a> of word-spew spam rendered the junk filter in Mail.app ineffective (for me). With no way to upgrade the filter functionality built into Mail.app, I decided to get an external, upgradeable, extensible filter working. Once all was said and done, I had procmail and bogofilter working and word list management <a href="http://www.apple.com/applescript/developers/">AppleScript</a>s integrated into Mail.app:</p>
 
-<p align="center"><img src="http://mult.ifario.us/files/spamscripts.png" /></p>
+<p align="center"><img src="http://blog.prb.io/files/spamscripts.png" /></p>
 
 <h4>Mail Processing Pipeline Construction and Configuration</h4>
 
@@ -22,7 +22,7 @@ categories: [spam, mail, bogofilter, macosx, qpopper, procmail, applescript]
 
 <p>To get around the issues, I settled on a mail processing pipeline that still presents a POP3 interface to Mail.app:</p>
 
-<p align="center"><img href="http://mult.ifario.us/files/POPStack.png" /></p>
+<p align="center"><img href="http://blog.prb.io/files/POPStack.png" /></p>
 
 <p>Mac OS X 10.3 comes with procmail and <a href="http://www.catb.org/~esr/fetchmail/">fetchmail</a>, so that much is easy. For the local POP3 server, <a href="http://www.eudora.com/qpopper/%20is%20available%20from%20%7Blink:darwinports">qpopper</a>), and the setup <a href="http://www.kung-foo.tv/blog/archives/000654.php">instructions</a> in Adriaan Tijsseling's <a href="http://www.kung-foo.tv/blog">blog</a> are straightforward.</p>
 
@@ -55,7 +55,7 @@ poll mailhost.com with protocol POP3:
 
 <p>With the mail processing pipeline working, I shut off Mail.app's junk mail processing and added a rule to trigger on messages that bogofilter marks as spam:</p>
 
-<p align="center"><img src="http://mult.ifario.us/files/bogorule.png" /></p>
+<p align="center"><img src="http://blog.prb.io/files/bogorule.png" /></p>
 
 <p>The more difficult piece of integration is a way to manage the bogofilter word list from within Mail.app. Because I'm using the -u option that automatically adds to the counts in the word list, I need to rerun bogofilter with either -Ns (decrement the ham counts, incremenet the spam counts) or -Sn (decrement the spam counts, increment the ham counts), as appropriate, to reclassify a message.</p>
 
@@ -120,7 +120,7 @@ end using terms from</pre>
   end perform mail action with messages
 end using terms from</pre>
 
-<p>If you're lazy or want something to use as a starting point, <a href="http://mult.ifario.us/files/bogoscripts.tar.bz2">here</a> are the scripts I'm using. To install, unpack in ~/Library/Scripts/Mail\ Scripts.</p>
+<p>If you're lazy or want something to use as a starting point, <a href="http://blog.prb.io/files/bogoscripts.tar.bz2">here</a> are the scripts I'm using. To install, unpack in ~/Library/Scripts/Mail\ Scripts.</p>
 
 <p>I'm a relative newbie to AppleScript and the internals of inter-application communication on Mac OS X, so exploring the different ways to integrate procmail and bogofilter with Mail.app was educational. At the very high end, it is <a href="http://www.tikouka.net/mailapp/">apparently possible</a> to build native plug-in bundles for Mail.app. (I couldn't even get started because <a href="http://www.apple.com/macosx/features/xcode/">XCode</a> kept crashing on me...) Example source code (<a href="http://sourceforge.net/projects/dirtoy/">here</a> and <a href="http://www.sente.ch/software/GPGMail/English.lproj/GPGMail.html">here</a>) is available, but I wasn't able to locate any official documentation. I also explored the possibilities with the specific capabilities of <a href="http://homepages.cwi.nl/~jack/macpython/index.html">MacPython</a> and <a href="http://pudge.net/macperl/Mac-Glue.html">Mac::Glue</a>.</p>
 

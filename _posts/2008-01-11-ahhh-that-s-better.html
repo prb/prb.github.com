@@ -5,7 +5,7 @@ permalink: ahhh-that-s-better.html
 categories: [perpubplat, typo, reliability]
 ---
 
-<p>I <a href="http://mult.ifario.us/p/administrivia">cut over</a> to
+<p>I <a href="http://blog.prb.io/administrivia.html">cut over</a> to
 perpubplat about a week ago, so it's worth a quick check to see if I
 met my goal of getting a few more nines.</p>
 
@@ -14,14 +14,14 @@ the Typo version of this site, and on the right, the perpubplat
 version. (The charts are from the free monitoring service from <a
 href="http://mon.itor.us">mon.itor.us</a>.)  The Typo configuration
 used Apache2 with <code>mod_fcgid</code> (see my earlier <a
-href="http://mult.ifario.us/p/apache2-mod_fcgid-rails">post</a> on the
+href="http://blog.prb.io/apache2-mod_fcgid-rails.html">post</a> on the
 subject) configured for seven processes with a maximum 60-minute
 lifetime; the perpubplat configuration uses Apache2 with
 <code>mod_fastcgi</code> configured for a single process that runs on
 50 lightweight Haskell threads internally.  (N.B.: The graphs use different
 scales on the y-axis.)</p>
 
-<p style="align: center;"><img src="http://mult.ifario.us/files/typo_reliability.png" alt="mon.itor.us graph for Typo install of mult.ifario.us" />&#160;<img src="http://mult.ifario.us/files/perpubplat_reliability.png" alt="mon.itor.us graph for perpubplat install of mult.ifario.us" /></p>
+<p style="align: center;"><img src="http://blog.prb.io/files/typo_reliability.png" alt="mon.itor.us graph for Typo install of blog.prb.io" />&#160;<img src="http://blog.prb.io/files/perpubplat_reliability.png" alt="mon.itor.us graph for perpubplat install of blog.prb.io" /></p>
 
 <p>The graph hints that things are better, but some quick text
 processing on server logs make the difference more explicit.  Here's

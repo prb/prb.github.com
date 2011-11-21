@@ -6,6 +6,6 @@ categories: [typo, feedburner, sidebar, plugin, ruby]
 ---
 <p>I finally got around to signing up with <a href="http://www.feedburner">FeedBurner</a> for the main Atom feed for <tt>mult.ifario.us</tt>; the new preferred feed is <a href="http://feeds.feedburner.com/Multifarious">http://feeds.feedburner.com/Multifarious</a>, but I'm going to hold off on <tt>301</tt>ing aggregators for the time being.  It was easier than I thought to get the FeedBurner feed and some auto-subscribe chicklets displayed in <a href="http://typo.leetsoft.org">typo</a>, thanks to a well-designed sidebar API.  In fact, it took all of 15 minutes to read the <tt>README</tt> on sidebar plugins, fire up a text editor, write the 16 lines of ruby and 46 lines of rhtml for the sidebar, fix some typos, bounce lighttpd, <em>et voil&aacute;</em>...</p>
 
-<img src="http://mult.ifario.us/files/fbsidebar.png" align="center" />
+<img src="http://blog.prb.io/files/fbsidebar.png" align="center" />
 
 <p>On the downside, the code for autodiscovery is not cleanly modularized in typo, so I stopped at the sidebar.  A more thorough integration would require a more thorough refactor (or at least a hack to hard-code the FeedBurner URL), as the autodiscovery feed code is spread between a superclass and a base class in the controllers.  (Yuck.)</p>

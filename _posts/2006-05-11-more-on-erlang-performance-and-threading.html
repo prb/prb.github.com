@@ -4,7 +4,7 @@ title: "More on Erlang Performance and Threading"
 permalink: more-on-erlang-performance-and-threading.html
 categories: [erlang, smp, multicore, concurrency, threading, kernel, macosx, g5]
 ---
-<p>After I saw <a href="http://www.franklinmint.fm/">Robert Sayre</a>'s <a href="http://www.franklinmint.fm/blog/archives/000792.html">results</a>, I thought that I'd give Rickard Green's Erlang <a href="http://www.erlang.org/ml-archive/erlang-questions/200603/msg00111.html">exerciser</a> &#8220;<a href="http://mult.ifario.us/files/big.erl">big.erl</a>&#8221; a go on my four-core (two 2.5GHz G5 processors with two cores each) PowerMac (MacOS&#160;X 10.4.6) to see the effect of different numbers of schedulers.  (Joe Armstrong posted some <a href="http://www.erlang-stuff.net/wordpress/?p=14">benchmark information</a> in his <a href="http://www.erlang-stuff.net/">blog</a>, but I don't have a means to reproduce them for direct comparison.)</p>
+<p>After I saw <a href="http://www.franklinmint.fm/">Robert Sayre</a>'s <a href="http://www.franklinmint.fm/blog/archives/000792.html">results</a>, I thought that I'd give Rickard Green's Erlang <a href="http://www.erlang.org/ml-archive/erlang-questions/200603/msg00111.html">exerciser</a> &#8220;<a href="http://blog.prb.io/files/big.erl">big.erl</a>&#8221; a go on my four-core (two 2.5GHz G5 processors with two cores each) PowerMac (MacOS&#160;X 10.4.6) to see the effect of different numbers of schedulers.  (Joe Armstrong posted some <a href="http://www.erlang-stuff.net/wordpress/?p=14">benchmark information</a> in his <a href="http://www.erlang-stuff.net/">blog</a>, but I don't have a means to reproduce them for direct comparison.)</p>
 
 <h4>Eye-Grabbing Plots</h4>
 
@@ -12,7 +12,7 @@ categories: [erlang, smp, multicore, concurrency, threading, kernel, macosx, g5]
 
 <table align="center">
 <tr>
-<td rowspan="8"><img src="http://mult.ifario.us/files/bmark_comparison.png" /></td>
+<td rowspan="8"><img src="http://blog.prb.io/files/bmark_comparison.png" /></td>
 <td></td><td></td>
 </tr><tr>
 <th><small>#Schedulers</small></th><th><small>Color</small></th>
@@ -34,7 +34,7 @@ categories: [erlang, smp, multicore, concurrency, threading, kernel, macosx, g5]
 
 <p>The green plot illustrates that four schedulers breaks even with one or two schedulers at 800 processes and wins from there out.  (I did try a 32 scheduler run but ditched it part way through because the performance was so poor.)  Here's another plot that provides an alternative visualization.</p>
  
-<p align="center"><img src="http://mult.ifario.us/files/bmark.png" /></p>
+<p align="center"><img src="http://blog.prb.io/files/bmark.png" /></p>
 
 <p>In the plot, lighter is faster, and as the number of processes increases, it's visually apparent that the four scheduler sequence is superior.</p>
 
@@ -48,7 +48,7 @@ categories: [erlang, smp, multicore, concurrency, threading, kernel, macosx, g5]
 
 <h4>Code Snippets</h4>
 
-<p>Here's a little <a href="http://mult.ifario.us/files/bmark.erl">snippet</a> of Erlang to make running the benchmark with different numbers of processes easier and dump data in a convenient format:</p>
+<p>Here's a little <a href="http://blog.prb.io/files/bmark.erl">snippet</a> of Erlang to make running the benchmark with different numbers of processes easier and dump data in a convenient format:</p>
 
 <pre class="code">-module(bmark).
 -export([go/0]).

@@ -27,9 +27,9 @@ main' = mapM_ putStr (map f [1..100])</pre>
 
 <p>So, which one is better?  Interestingly, if you crank up the <tt>100</tt> to <tt>10000000</tt> (10<sup>8</sup>), either one of those two versions runs in well under a minute, in &lt;2MB of (resident) memory, and presents roughly the same heap profile:</p>
 
-<p align="center"><img src="http://mult.ifario.us/files/fb2.png" /><br/><tt>main</tt></p>
+<p align="center"><img src="http://blog.prb.io/files/fb2.png" /><br/><tt>main</tt></p>
 
-<p align="center"><img src="http://mult.ifario.us/files/fb1.png" /><br/><tt>main'</tt></p>
+<p align="center"><img src="http://blog.prb.io/files/fb1.png" /><br/><tt>main'</tt></p>
 
 <p>The <tt>main'</tt> version might naively appear to be faster than the <tt>main</tt> version, but this is <em>laziness</em> in action: a <tt>String</tt> is <tt>[Char]</tt>, i.e., a list of characters.  The list of characters passed to <tt>putStr</tt> in the <tt>main</tt> version is generated lazily, as are the <tt>IO</tt> actions in the <tt>main'</tt> version.  (In fact, the <tt>main</tt> version is faster at under 7 seconds to roughly 20 seconds for the <tt>main'</tt> version.)  As you would expect based on laziness, both programs begin producing output immediately upon execution.  Meanwhile, without laziness, the <tt>ruby</tt> version chews up gobs of memory and takes a long time.  (I got tired of waiting for it after about 30 minutes, at which point it was using 35M of resident memory without producing any output.)  The simplest possible ruby solution (<tt>for</tt> loop, <tt>if</tt>...<tt>elsif</tt>...<tt>else</tt>) runs in around 45 seconds and consumes &lt;2M of resident memory.</p>
 

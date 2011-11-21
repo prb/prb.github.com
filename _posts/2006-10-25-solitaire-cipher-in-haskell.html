@@ -129,7 +129,7 @@ c_cut :: [Card] -> [Card]                 -- "count cut"</pre>
 <pre class="code">c_cut ( (t_cut ja jb) ( (m jb) ((m jb) ( (m ja) ( deck )))))</pre>
 
 <p>where I'm using <code>ja</code> for <code>(Cd A Joker)</code> and <code>jb</code> for <code>(Cd B Joker)</code>.</p>
-<p>The whole implementation, complete with some inelegant bits for improvement, is <a href="http://mult.ifario.us/files/solitaire.hs">here</a> (or pretty-printed code <a href="http://haskell.org/haskellwiki/Haskell_Quiz/The_Solitaire_Cipher/Solution_Paul">here</a>) and works:</p>
+<p>The whole implementation, complete with some inelegant bits for improvement, is <a href="http://blog.prb.io/files/solitaire.hs">here</a> (or pretty-printed code <a href="http://haskell.org/haskellwiki/Haskell_Quiz/The_Solitaire_Cipher/Solution_Paul">here</a>) and works:</p>
 
 <pre class="code">*Main> encode "Code in Ruby, live longer!"
 "GLNCQMJAFFFVOMBJIYCB"

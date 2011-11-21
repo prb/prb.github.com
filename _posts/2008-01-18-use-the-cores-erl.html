@@ -6,22 +6,22 @@ categories: [erlang, concurrency, multicore, macpro, apple]
 ---
 
 <p>In spite of the fact that my last Apple workstation <a
-href="http://mult.ifario.us/p/unsatisfactory">failed</a> rather <a
-href="http://mult.ifario.us/p/a-dirty-g5-is-a-sleepy-g5">ingloriously</a>
+href="http://blog.prb.io/unsatisfactory.html">failed</a> rather <a
+href="http://blog.prb.io/a-dirty-g5-is-a-sleepy-g5.html">ingloriously</a>
 after only a couple of years of use, I went ahead and replaced it with
 another Apple workstation, an eight-core <a
 href="http://www.apple.com/macpro/">Mac Pro</a>.</p>
 
 <p>As an experiment, I decided to run the same Erlang benchmark (<a
-href="http://mult.ifario.us/files/big.erl"><code>big.erl</code></a>)
+href="http://blog.prb.io/files/big.erl"><code>big.erl</code></a>)
 that I ran on the quad-core machine, this time with Erlang R12B.  The
 <a
-href="http://mult.ifario.us/p/more-on-erlang-performance-and-threading">previous
+href="http://blog.prb.io/p/more-on-erlang-performance-and-threading">previous
 results</a> showed that four schedulers was optimal on the four-core
 machine.  Here are the results of the same test battery on the
 eight-core machine:</p>
 
-<p style="text-align: center;"><img src="http://mult.ifario.us/files/big_erl.png" alt="line chart of throughput per number of Erlang schedulers" /></p>
+<p style="text-align: center;"><img src="http://blog.prb.io/files/big_erl.png" alt="line chart of throughput per number of Erlang schedulers" /></p>
 
 <p>Two things are odd about this chart:</p>
 
@@ -42,7 +42,7 @@ doesn't disprove the hypothesis that the optimum number of schedulers
 equals the number of cores, since the benchmark only appears to be
 utilizing three of the eight cores:</p>
 
-<p style="text-align: center;"><img src="http://mult.ifario.us/files/cpu_idle.png" alt="CPU information showing only 33% active" /></p>
+<p style="text-align: center;"><img src="http://blog.prb.io/files/cpu_idle.png" alt="CPU information showing only 33% active" /></p>
 
 <p>The question is why the Erlang VM isn't using the available CPU
 resources.  (Two separate VMs running <code>big.erl</code> get
