@@ -3,7 +3,7 @@ lsi: false
 pygments: true
 permalink: none
 markdown: maruku
-exclude: [ perpubplat, internal ]
+exclude: [ perpubplat, internal, _attic ]
 
 maruku:
     use_divs: true
