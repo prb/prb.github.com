@@ -5,7 +5,7 @@ permalink: first-steps-with-haskell-for-web-applications.html
 categories: [haskell, ruby, rubyonrails, blogging, performance, benchmarking, fastcgi, cgi, atom]
 ---
 <p>As I <a
-href="http://mult.ifario.us/articles/2006/10/10/typo-textdrive-happy">blogged</a>
+href="http://blog.prb.io/typo-textdrive-happy.html">blogged</a>
 yesterday, I'm planning to build a simplified personal publishing
 system to host this blog, partially to get around resource consumption
 issues with the current platform and partially to get some exercise
@@ -25,7 +25,7 @@ href="http://rubygems.org/">gems</a>, the GHC runtime also has
 excellent modularity, with a minimal and standard core and good
 package management via <a
 href="http://www.haskell.org/cabal/">Cabal</a>.  (<a
-href="http://mult.ifario.us/articles/2006/08/20/open-source-java-yawn">Hello</a>?
+href="http://blog.prb.io/open-source-java-yawn.html">Hello</a>?
 <a href="http://www.jcp.org/en/jsr/detail?id=270">Java</a>?)</p>
 
 <p>The first question is how to integrate an application written in Haskell into a web container, preferably a web server like <a href="http://www.lighttpd.net/">lightTPD</a> or <a href="http://httpd.apache.org/">Apache</a> via <a href="http://www.fastcgi.com/">FastCGI</a>.  (<a href="http://hoohoo.ncsa.uiuc.edu/cgi/">CGI</a> would be a consideration, too, but that's just too retro for me.)  Thankfully, as of the forthcoming 6.6 version, GHC has good CGI support via the <a href="http://www.haskell.org/ghc/dist/current/docs/libraries/cgi/Network-CGI.html">Network.CGI</a> module, and <a href="http://www.cs.chalmers.se/~bringert/">Bj&ouml;rn Bringert</a> has a <a href="http://www.cs.chalmers.se/~bringert/darcs/haskell-fastcgi/doc/">FastCGI binding</a> that built on the GHC 6.5 tip with only a little tinkering.  (I wanted to use the core Network.CGI module in place of Bj&ouml;rn's <a href="http://www.cs.chalmers.se/~bringert/darcs/cgi-compat/doc/"><tt>cgi-compat</tt></a> module.)</p>

@@ -6,11 +6,11 @@ categories: [haskell, perpubplat, typo, blog]
 ---
 
 <p>I <a
-href="http://mult.ifario.us/p/first-steps-with-haskell-for-web-applications">started</a>
+href="http://blog.prb.io/first-steps-with-haskell-for-web-applications.html">started</a>
 thinking about replacing <a href="http://www.typosphere.org/">Typo</a>
 back in October of 2006, and my home-brew project to do so is at the
 point where it's usable as a replacement.  In fact, I <a
-href="http://mult.ifario.us/p/administrivia">cut over</a> this
+href="http://blog.prb.io/administrivia.html">cut over</a> this
 morning, so you're looking at it right now.</p>
 
 <p>The current implementation represents an investment of around 60
@@ -52,7 +52,7 @@ to experiment with.</p>
 <li><em>Container:</em> FastCGI handler implemented in Haskell that
 parses request URIs to determine how to respond.  Apache with
 <code>mod_fastcgi</code> is configured as described in an earlier <a
-href="http://mult.ifario.us/p/wiring-haskell-into-a-fastcgi-web-server">post</a>.</li>
+href="http://blog.prb.io/wiring-haskell-into-a-fastcgi-web-server.html">post</a>.</li>
 
 <li><em>Storage:</em>  Plain text, simple file storage of entities (posts, comments,
 drafts, etc.) in a human editable, human readable format.</li>
@@ -63,7 +63,7 @@ and manages a single in-memory instance of the data.  The event loop
 runs on a lightweight background thread that gets forked when Apache
 spins-up the FastCGI handler, and the approach is equivalent to the
 one I used for the <a
-href="http://mult.ifario.us/p/tuppence-tour-of-haskell-concurrency-constructs">sequence
+href="http://blog.prb.io/tuppence-tour-of-haskell-concurrency-constructs.html">sequence
 number generator</a> experiment.</li>
 
 <li><em>Browser Views:</em> XHTML rendering via the <a
@@ -71,7 +71,7 @@ href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/xhtml"><code>Te
 combinator package.</li>
 
 <li><em>Atom Feeds:</em> A modified version of the lightweight Atom library that I <a
-href="http://mult.ifario.us/p/really-simple-atom-syndication">posted</a>
+href="http://blog.prb.io/really-simple-atom-syndication.html">posted</a>
 on previously.</li>
 
 </ol>

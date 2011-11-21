@@ -4,7 +4,7 @@ title: "JSON as a Migration Format"
 permalink: json-as-a-migration-format.html
 categories: [json, ruby, typo, haskell]
 ---
-<p>I'm making slow progress on my personal publishing platform rewrite in Haskell (see earlier posts <a href="http://mult.ifario.us/articles/2006/10/11/first-steps-with-haskell-for-web-applications">here</a> and <a href="http://mult.ifario.us/articles/2006/10/18/more-haskell-and-personal-publishing-platform-ramblings">here</a>), so herein part 3 of <code>n</code>, wherein I experiment with data migration and an embarrassingly simple data model.  A forthcoming part 4 will be really simple Atom serialization.</p>
+<p>I'm making slow progress on my personal publishing platform rewrite in Haskell (see earlier posts <a href="http://blog.prb.io/first-steps-with-haskell-for-web-applications.html">here</a> and <a href="http://blog.prb.io/more-haskell-and-personal-publishing-platform-ramblings.html">here</a>), so herein part 3 of <code>n</code>, wherein I experiment with data migration and an embarrassingly simple data model.  A forthcoming part 4 will be really simple Atom serialization.</p>
 
 <h3>Data Out, Data In</h3>
 <p>As I experiment with the new platform, I'd like a way to move the data from the <a href="http://www.typosphere.org">typo</a> instance into the new environment on-demand; this post is my lab notebook for the export/import experiment.</p>
@@ -100,6 +100,6 @@ $ ./script/runner 'puts (Article.find_all_by_state("ContentState::Published")).t
 $ ./script/runner 'puts (Trackback.find_all_by_state("ContentState::Ham")).to_json' \
   > /tmp/trackbacks.json</pre>
 
-<p>although it takes a little doing to collate comments and trackbacks with their parent posts.  So far, so good &#8212; unlike any of the other migrations (<a href="http://mult.ifario.us/articles/2003/10/04/migrating-radio-to-snipsnap">Radio&#160;Userland&rarr;SnipSnap</a>, <a href="http://mult.ifario.us/articles/2004/08/16/migrated-from-snipsnap">SnipSnap&rarr;WordPress</a>, and <a href="http://mult.ifario.us/articles/2005/11/26/migrated-to-typo">WordPress&rarr;typo</a>) I've done, this looks to be neither lossy nor labor-intensive.</p>
+<p>although it takes a little doing to collate comments and trackbacks with their parent posts.  So far, so good &#8212; unlike any of the other migrations (<a href="http://blog.prb.io/migrating-radio-to-snipsnap.html">Radio&#160;Userland&rarr;SnipSnap</a>, <a href="http://blog.prb.io/migrated-from-snipsnap.html">SnipSnap&rarr;WordPress</a>, and <a href="http://blog.prb.io/migrated-to-typo.html">WordPress&rarr;typo</a>) I've done, this looks to be neither lossy nor labor-intensive.</p>
 
 <p>As an aside, over about four years of blogging (2003-02-17 through the present), I've accumulated the equivalent of ~110 single-spaced pages of content.</p>

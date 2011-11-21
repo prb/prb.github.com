@@ -4,7 +4,7 @@ title: "WordPress to Typo Migration, Part II"
 permalink: wordpress-to-typo-migration-part-ii.html
 categories: [typo, wordpress, modrewrite, http, redirect, migration, ruby]
 ---
-<p>The <a href="http://mult.ifario.us/articles/2005/11/26/migrated-to-typo">initial migration</a> (and a subsequent upgrade from 2.6.0 to svn trunk) was pretty much painless, but the database migration didn't take care of mapping permalinks or date queries from the WordPress scheme to the typo scheme.  Enter a little <a href="http://httpd.apache.org/docs/1.3/mod/mod_rewrite.html"><code>mod_rewrite</code></a> and Ruby (at which I'm a newbie).</p>
+<p>The <a href="http://blog.prb.io/migrated-to-typo.html">initial migration</a> (and a subsequent upgrade from 2.6.0 to svn trunk) was pretty much painless, but the database migration didn't take care of mapping permalinks or date queries from the WordPress scheme to the typo scheme.  Enter a little <a href="http://httpd.apache.org/docs/1.3/mod/mod_rewrite.html"><code>mod_rewrite</code></a> and Ruby (at which I'm a newbie).</p>
 
 <p>The first step is to grab the query string on the old server, e.g., to grab the WordPress-style permalink:</p>
 

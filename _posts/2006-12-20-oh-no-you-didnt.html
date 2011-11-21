@@ -10,7 +10,7 @@ categories: [ruby, flickr, typo, rexml, sidebar]
   of vendor/plugins/flickr_sidebar/views/content.rhtml:
 [... lots and lots of stuff ...]</pre>
 
-<p>Ah, OK.  I haven't gotten <a href="http://typosphere.org/">Typo</a> current since I decided to <a href="http://mult.ifario.us/articles/2006/10/11/first-steps-with-haskell-for-web-applications">roll</a> <a href="http://mult.ifario.us/articles/2006/10/18/more-haskell-and-personal-publishing-platform-ramblings">my own</a> (which I'm still doing...), so it serves me right if some bug is biting me.  Off to look at the Flickr sidebar, and this chestnut is what's choking things:</p>
+<p>Ah, OK.  I haven't gotten <a href="http://typosphere.org/">Typo</a> current since I decided to <a href="http://blog.prb.io/first-steps-with-haskell-for-web-applications.html">roll</a> <a href="http://blog.prb.io/more-haskell-and-personal-publishing-platform-ramblings.html">my own</a> (which I'm still doing...), so it serves me right if some bug is biting me.  Off to look at the Flickr sidebar, and this chestnut is what's choking things:</p>
 
 <pre class="code">def image
     description.scan( /(http:\/\/(static|photos).*?\.jpg)/ ).first.first

@@ -44,4 +44,4 @@ sys     0m0.015s</pre>
 @reboot /usr/local/sbin/lighttpd -f /home/pbrown/web/lighttpd/config/lighttpd.conf
 */10 * * * * /home/pbrown/bin/nanny.py 2&gt;&#38;1 >> /home/pbrown/logs/nanny.out</pre>
 
-<p>This ensures that I'll get an email if a kick is needed, and only running every ten minutes should ensure that the script never overlaps with itself except under truly extraordinary circumstances.  This approach won't detect situations like internal deadlock or unresponsiveness, but neither would a <a href="http://mult.ifario.us/articles/2005/12/04/the-nagging-nanny-management-antipattern">nagging nannny.</a>  That has to be approached other ways.</p>
+<p>This ensures that I'll get an email if a kick is needed, and only running every ten minutes should ensure that the script never overlaps with itself except under truly extraordinary circumstances.  This approach won't detect situations like internal deadlock or unresponsiveness, but neither would a <a href="http://blog.prb.io/the-nagging-nanny-management-antipattern.html">nagging nannny.</a>  That has to be approached other ways.</p>
