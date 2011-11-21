@@ -1,0 +1,42 @@
+---
+layout: post
+title: "A Little Love for Io"
+permalink: a-little-love-for-io.html
+categories: [io, iolanguage, concurency, actors]
+---
+
+<p><a href="http://iolanguage.com">Io</a> has been getting some <a
+href="http://hackety.org/2008/01/05/ioHasAVeryCleanMirror.html">nice</a>
+<a
+href="http://www.windley.com/archives/2008/01/the_io_programming_language.shtml">buzz</a>
+lately for its reflection capabilities and minimality.  Steve
+Dekorte's <a href="http://www.dekorte.com/blog/">blog</a> is also a
+good read, although software wisdom is vastly outnumbered by links to
+<a
+href="http://www.dekorte.com/blog/blog.cgi?do=item&amp;id=3149">cool</a>
+<a
+href="http://www.dekorte.com/blog/blog.cgi?do=item&amp;id=3133">architecture</a>
+and <a
+href="http://www.dekorte.com/blog/blog.cgi?do=item&amp;id=3139">design</a>.</p>
+
+<p>My favorite thing about the language is still its concurrency
+annotations.  Way back in 2004, when I was surveying <a
+href="http://www.erights.org/history/actors.html">Actor</a> languages,
+I <a
+href="http://mult.ifario.us/p/a-little-fun-with-concurrency-in-io">posted</a>
+about Io's support for making methods non-blocking via annotating the
+invocation.  (This is similar to Haskell's <code>par</code> <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/parallel/Control-Parallel.html#v%3Apar">annotation</a>.)
+Other than <code>activeCoroCount</code> being replaced by
+<code>activeActorCount</code>, it looks like the annotations remain
+the same:</p>
+
+<ul>
+<li><code>foo bar</code> calls the <code>bar</code> method on the object <code>foo</code> synchronously, returning a value.</li>
+<li><code>foo @bar</code> calls the method asynchronously, immediately returning a future.</li>
+<li><code>foo @@bar</code> calls the method asynchronously, immediately returning <code>nil</code></li>
+</ul>
+
+<p>I haven't had a chance to try out the deadlock detection, but
+coming up with an example should be an interesting exercise.</p>
+

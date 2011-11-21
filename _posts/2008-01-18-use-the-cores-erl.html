@@ -1,0 +1,58 @@
+---
+layout: post
+title: "Use the Cores, <code>erl</code>"
+permalink: use-the-cores-erl.html
+categories: [erlang, concurrency, multicore, macpro, apple]
+---
+
+<p>In spite of the fact that my last Apple workstation <a
+href="http://mult.ifario.us/p/unsatisfactory">failed</a> rather <a
+href="http://mult.ifario.us/p/a-dirty-g5-is-a-sleepy-g5">ingloriously</a>
+after only a couple of years of use, I went ahead and replaced it with
+another Apple workstation, an eight-core <a
+href="http://www.apple.com/macpro/">Mac Pro</a>.</p>
+
+<p>As an experiment, I decided to run the same Erlang benchmark (<a
+href="http://mult.ifario.us/files/big.erl"><code>big.erl</code></a>)
+that I ran on the quad-core machine, this time with Erlang R12B.  The
+<a
+href="http://mult.ifario.us/p/more-on-erlang-performance-and-threading">previous
+results</a> showed that four schedulers was optimal on the four-core
+machine.  Here are the results of the same test battery on the
+eight-core machine:</p>
+
+<p style="text-align: center;"><img src="http://mult.ifario.us/files/big_erl.png" alt="line chart of throughput per number of Erlang schedulers" /></p>
+
+<p>Two things are odd about this chart:</p>
+
+<ol>
+
+<li>The running times appear to be about equal to the running times
+for the benchmark on the quad-core machine.  The raw clock speeds
+aren't that different per core (2.5GHz G5 versus 2.8GHz Xeon), so maybe it's
+not unreasonable for that to be a draw.</li>
+
+<li>Four schedulers appears to be the optimum (from the set
+{1,2,4,8,16,32}), where eight would have been the expected value.</li>
+
+</ol>
+
+<p>It turns out that the optimality of four schedulers in this case
+doesn't disprove the hypothesis that the optimum number of schedulers
+equals the number of cores, since the benchmark only appears to be
+utilizing three of the eight cores:</p>
+
+<p style="text-align: center;"><img src="http://mult.ifario.us/files/cpu_idle.png" alt="CPU information showing only 33% active" /></p>
+
+<p>The question is why the Erlang VM isn't using the available CPU
+resources.  (Two separate VMs running <code>big.erl</code> get
+utilization up to 85%.)  The answer may be buried somewhere inside
+operating system limits (see, e.g., <a
+href="http://developer.apple.com/documentation/Darwin/Reference/ManPages/man3/sysctl.3.html#//apple_ref/doc/man/3/sysctl"><code>sysctl(3)</code></a>
+and <a
+href="http://developer.apple.com/documentation/Darwin/Reference/ManPages/man8/sysctl.8.html#//apple_ref/doc/man/8/sysctl"><code>sysctl(8)</code></a>;
+maybe <code>kern.clockrate</code>?), but it might also be something
+more interesting.  Meanwhile, I'll try to come up with a similar toy
+benchmark for Haskell to see if it achieves better utilization of the
+CPUs.</p>
+

@@ -1,0 +1,27 @@
+---
+layout: post
+title: "Tip for (Legal) Contracts in L<sub>A</sub>T<sub>E</sub>X"
+permalink: tip-for-legal-contracts-in-l-sub-a-sub-t-sub-e-sub-x.html
+---
+<p>With FiveSight's users almost entirely switched to non-Microsoft operating systems (namely, Mac OS X and debian Linux), it's an opportunity to ditch Microsfot Word entirely.  (As <a href="http://blogs.fivesight.com/pbblog/index.php?p=34">little</a> as I like Word, I like even less the use of <code>.doc</code> as the standard interchange format for business.)  Using L<sub>A</sub>T<sub>E</sub>X for documentation makes good sense, since the output via <a href="http://www.tug.org/applications/pdftex">PDFL<sub>A</sub>T<sub>E</sub>X</a> is beautiful and portable.  Moreover, both L<sub>A</sub>T<sub>E</sub>X and tools to edit it (i.e., Emacs with <a href="http://www.gnu.org/software/auctex/">AUCT<sub>E</sub>X</a>) are generally available.  Product documentation, Board minutes, and corporate letterhead were the first to go, and now contracts and other legal documents are following.</p>
+
+<p>One of the challenges was signature blocks for contracts, but L<sub>A</sub>T<sub>E</sub>X's <code>tabular*</code> environment makes it easy:</p>
+
+<pre class="code">\begin{tabular*}{\textwidth}% =396pt in this case
+{@{} \p{180pt} @{} \p{36pt} @{} \p{180pt} @{}}
+&amp; &amp; \
+\includegraphics[scale=0.10]{../images/fmugwump_signature.pdf}&amp;
+&amp; \ \cline{1-1}\cline{3-3}
+{\small By} &amp; &amp; {\small By}\
+&amp; &amp; \
+Farquar T. Mugwump, Esq. &amp; &amp; \ \cline{1-1}\cline{3-3}
+{\small (printed)} &amp; &amp; {\small (printed)}\
+&amp; &amp; \
+Chief Foobar Officer &amp; &amp; \ \cline{1-1}\cline{3-3}
+{\small Title} &amp; &amp; {\small Title}\
+&amp; &amp; \
+Newcular, LLC &amp; &amp;  \ \cline{1-1}\cline{3-3}
+{\small Company} &amp; &amp; {\small Company} \
+\end{tabular*}</pre>
+
+<p>At least in my book, that beats mousing around for 15 minutes...</p>

@@ -1,0 +1,18 @@
+---
+layout: post
+title: "If only there was lint for XPath..."
+permalink: if-only-there-was-lint-for-xpath.html
+categories: [link, xpath, oops, bpel]
+---
+<p>An alternate title might be why <tt>true</tt> is <tt>false</tt>.</p>
+
+<p>I got some help from <a href="http://offthelip.org/">Matthieu</a> debugging a BPEL process today, and it boiled down to this little construct:</p>
+
+<pre class="code">&lt;b:while>
+  &lt;b:condition>true&lt;/b:condition>
+  [...]
+&lt;/b:while></pre>
+
+<p>A <a href="http://en.wikipedia.org/wiki/Lint_programming_tool">lint</a> for <a href="http://www.w3.org/TR/xpath">XPath 1.0</a> would have caught this one.  As written, <tt>true</tt> is a <a href="http://www.w3.org/TR/xpath#NT-RelativeLocationPath">relative location path</a>, and depending on the document and context node, if there isn't a node named <tt>true</tt>, it would evaluate to the boolean value <tt>false</tt>.  (The expressions <a href="http://docs.oasis-open.org/wsbpel/2.0/OS/wsbpel-v2.0-OS.html#_Toc164738497">section</a> of WS-BPEL 2.0 <a href="http://docs.oasis-open.org/wsbpel/2.0/OS/wsbpel-v2.0-OS.html">specification</a> further states that the XPath function <tt>boolean(...)</tt> should be applied to any value not already a boolean.)</p>
+
+<p>This is what the <a href="http://www.w3.org/TR/xpath#function-true"><tt>true()</tt></a> function is for.  Kudos to Matthieu for spotting it after we'd explored a few rabbit holes looking for an explanation.  (And, yes, I <a href="http://mult.ifario.us/articles/2004/10/09/emacs-as-a-ws-bpel-editor">still</a> write WS-BPEL by hand in Emacs.  I'll get around to updating my Relax NG Compact <a href="http://mult.ifario.us/articles/2004/10/10/emacs-as-a-ws-bpel-editor-part-ii">schema</a> for transitional BPEL to WS-BPEL 2.0 at some point.)</p>

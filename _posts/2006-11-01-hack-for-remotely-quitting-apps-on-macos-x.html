@@ -1,0 +1,15 @@
+---
+layout: post
+title: "Hack for Remotely Quitting Apps on MacOS X"
+permalink: hack-for-remotely-quitting-apps-on-macos-x.html
+categories: [macos, x, applescript, osascript, commandline, hacks]
+---
+<p>Every so often, I'm away from my primary home machine (accessible via secure shell on a non-standard port) and I want to shut down Mail or Adium or RemoteDesktop or some other application.  The following hack provides a more graceful shutdown than a <code>kill</code> from the commandline:</p>
+
+<pre class="code">$ osascript
+tell application "Mail"
+        quit
+end
+&lt;CTRL-D></pre>
+
+<p>Where the <code>"Mail"</code> could be <code>"Adium"</code> or whatever.</p>

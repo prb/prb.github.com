@@ -1,0 +1,10 @@
+---
+layout: post
+title: "Bye bye TextDrive, Hello Linode"
+permalink: bye-bye-textdrive-hello-linode.html
+categories: [textdrive, typo, hosting, linode, usermodelinux, debian, sharedhosting, vps, virtualserver, ubuntu, rubygems]
+---
+<p>The <a href="http://www.textdrive.com">TextDrive</a> folks are (not unjustifiably) cracking down on people who bump into their <a href="http://www.textdrive.com/aup">resource limits</a> (e.g., a hard limit of 48Mb resident and 80Mb virtual per process), both in the form of a watchdog process that kills off processes that cross the line and in the form of emails out to folks (like me) who use a <a href="http://mult.ifario.us/articles/2006/01/28/a-nanny-for-typo">process nanny</a> to restart their killed processes.  Unfortunately, TextDrive doesn't sell more per-process memory with any of their plans short of the $250/month price point, so I packed up and moved over to <a href="http://www.linode.com">Linode</a>.</p>
+
+<p>Linode provides <a href="http://user-mode-linux.sourceforge.net/">user-mode Linux</a> virtual private servers with reasonable specs, and so far so good.  I dropped in an Ubuntu 6.0.6 distribution, got things configured, and had the typo instance moved over with a total of about 30 minutes of time invested, most of which was invested fiddling libraries needed by mysql and sqlite gems.  (The Debian/Ruby team has an <a href="http://pkg-ruby-extras.alioth.debian.org/rubygems.html">official position</a> about why RubyGems isn't included, but it should be apparent that they've already lost to momentum in the Ruby community.)  For $20/month instead of $12/month, Typo has space to run (until I'm done writing its replacement), 500s are a thing of the past, and I've got root access instead of a goofy control panel.  Much better.</p>
+

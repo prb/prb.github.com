@@ -1,0 +1,45 @@
+---
+layout: post
+title: "Misunderstanding the BPEL Thing"
+permalink: misunderstanding-the-bpel-thing.html
+categories: [bpel, wsbpel, davidlinthicum, bpmn, bpel4people, bpms]
+---
+<p>Over on InfoWorld, David Linthicum has some misdirected and FUD-filled comments (<a href="http://weblog.infoworld.com/realworldsoa/archives/2006/09/wsbpel_20_not_b.html">original</a> and <a href="http://weblog.infoworld.com/realworldsoa/archives/2006/09/more_on_the_bpe.html">follow-up</a>) on the impending release of the WS-BPEL 2.0 standard by OASIS.  <a href="http://www.brsilver.com/wordpress/2006/09/26/bpel-bashing-redux-seeking-a-middle-ground/">Bruce Silver</a>, <a href="http://blogs.ittoolbox.com/eai/bpel/archives/bpel-debate-11880">Steve Hoffman</a>, and Fred Holahan are quicker on the draw in responding on the topic, but I'll come out of semi-retirement as a BPEL wonk to comment.  (I could never quite get off my kiester to go after <a href="http://www.davidchappell.com/blog/">David Chappelle</a> when he blogs about BPEL, partially because he has the clever defensive tactic of a broken blog that makes it impossible to link directly to entries...)</p>
+
+<p>First off, if there are any genuine issues with the consistency of the specification, behavioral, semantic, or otherwise, then those should get presented to the <a href="http://www.oasis-open.org/committees/tc_home.php?wg_abbrev=wsbpel">OASIS BPEL TC</a> promptly for consideration.  I doubt it.  The TC discussed literally thousands of issues &#8212; at length and sometimes <em>ad nauseum</em>.  Of the <a href="http://www.choreology.com/external/WS_BPEL_issues_list.html">308 of those</a> that were worthy of issue status, all have been resolved with the input of <a href="http://www.oasis-open.org/committees/membership.php?wg_abbrev=wsbpel">several dozen</a> smart folks (and a few dumb ones).</p>
+
+<p>As far as BPEL4WS 1.1 goes, finding a reasonable profile for the language isn't that onerous.  (In fact, it's easier to figure out a behavior profile than to decipher the combined licensing terms from the specification's "owners".)  Make a choice about variable declarations and fault-handlers, think hard about event-handlers, etc., and you can work it out.  Someone else might make different choices, but c'est la vie.  Row-level locking works differently in every SQL database, and no one's crying about it.  The PXE engine offered side-by-side execution of a working profile for BPEL4WS 1.1 and a spec-tracking version of WS-BPEL 2.0 starting back in 2003 (and was the first engine to do so), with the ability to apply management, deployment, and debugging functionality equally to both 1.1 and 2.0 processes within the same runtime container.  (PXE is now part of the <a href="http://wiki.apache.org/ode/FrontPage">ODE project</a> under incubation at Apache and <a href="http://www.intalio.com/products/server/">part</a> of <a href="http://www.intalio.com">Intalio</a>'s open-source BPMS.)  This was purposeful, up-front future-proof design; there was no planned or inadvertent obsolescence, no subterfuge.  Side-by-side support should be the baseline customer expectation.</p>
+
+<p>Before banging on a drum about portability, what would portability mean for an orchestrated process?  No one should expect that vendor-specific goodies are portable.  I can't run PL/SQL in DB2, and I'm cool with that.  Does portability mean demonstrable behavior equivalence, up to non-determinism?  A reasonable definition would be that a process written in vanilla WS-BPEL 2.0 should run in any engine that claims to be compliant, up to fussing with deployment descriptors.  (Neither the 1.1 nor 2.0 versions of the specification address the way that BPEL ports are bound to concrete ports, so this is different across the various vendors.)  For what it's worth, we had reasonable luck taking BPEL4WS 1.1 processes created with other tools and running them, with a modicum of fiddling.</p>
+
+<p>I <a href="http://mult.ifario.us/articles/2004/07/02/two-way-analogy-of-bpel-as-ws-assembler">said it</a> in 2004, Assaf said it recently in a long <a href="http://itredux.com/blog/2006/07/20/on-bpmn/">guest post</a> over on <a href="http://itredux.com/">IT|Redux</a>, and it's still true:  BPEL is an orchestration execution language, in a role analogous to assembly language.  To quote myself:</p>
+
+<table>
+<tbody><tr>
+<th>Assembly Language</th>
+<th>BPEL</th>
+</tr>
+<tr>
+<td>registers</td>
+<td>communication channels</td>
+</tr>
+<tr>
+<td>bytes/bits</td>
+<td>messages/parts</td>
+</tr>
+<tr>
+<td>memory</td>
+<td>variables</td>
+</tr>
+<tr>
+<td>operations on bytes/bits/memory</td>
+<td>operations on messages/parts/variables</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>BPEL engine</td>
+</tr>
+</tbody>
+</table>
+
+<p>And that's all you should expect it to be.  Diagramming tools?  Not in there &#8212; I'd recommend taking a look at BPMN.  Workflow add-ons?  Not in there &#8212; check out <a href="http://www.ibm.com/developerworks/webservices/library/specification/ws-bpel4people/">BPEL4People</a> or just (gasp) model your workflow components as services.</p>

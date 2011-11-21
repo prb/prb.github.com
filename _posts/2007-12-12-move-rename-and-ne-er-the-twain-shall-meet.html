@@ -1,0 +1,24 @@
+---
+layout: post
+title: "Move, Rename, and Ne'er the Twain Shall Meet"
+permalink: move-rename-and-ne-er-the-twain-shall-meet.html
+categories: [intellij, refactoring, annoyance, software, ide]
+---
+
+<p>The <code>mv</code> command in Unix has some subtlety to it in that
+it either moves or renames the file in question (never mind that it
+uses <a
+href="http://www.rt.com/man/rename.2.html"><code>rename(2)</code></a>
+to do it), but that subtlety is a good thing in that <code>mv</code>
+usually does what you expect it to do.</p>
+
+<p>Not so with IntelliJ.  I use IntelliJ for Java development, and while I do occasionally dally with Eclipse or Netbeans, I always come back.  Anyway, with a bunch of packages to rearrange across a multi-module project, I tried using the "move" refactor, e.g., to change <code>com.foo.x</code> to <code>com.foo.y</code>.  Contrary to my expectations, this produces <code>com.foo.y.x</code>, but not noticing immediately, I ended up with goofy package names like <code>com.bar.impl.impl.impl</code>.  ((<em>in <a href="http://en.wikipedia.org/wiki/Spam_(Monty_Python)">classic</a> Monty Python <a href="http://www.youtube.com/watch?v=wZ7YedEopp4">falsetto</a></em>) That doesn't have much <code>impl</code> in it...)  Grrrr.</p>
+
+<p>A little commandline action will get things cleaned up in terms of file layout, e.g.:</p>
+
+<pre class="code">find src -type file \
+| sed -E '{h;G;s:\n: :;s/(impl\/)+/(impl\/)/;}' \
+| xargs -n 2 mv</pre>
+
+<p>The first part of the <code>sed</code> program is a recipe for echoing the input as the first hunk of the line.</p>
+

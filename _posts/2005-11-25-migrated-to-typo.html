@@ -1,0 +1,52 @@
+---
+layout: post
+title: "Migrated to Typo"
+permalink: migrated-to-typo.html
+---
+
+<p>I've moved the venerable <a
+href="http://blogs.fivesight.com/pbblog">pbblog</a> over to <a
+href="http://typo.leetsoft.com/">typo</a> on <a
+href="http://www.lighttpd.net/">lighttpd</a> (and renamed it <a
+href="http://.dictionary.reference.com/search?q=multifarious">mult.ifario.us</a>),
+and the experience has been pleasant so far.  (Thanks to <a
+href="http://weblog.0x7b.com/">Joseph Tam</a> for helpful how-to
+articles <a
+href="http://weblog.0x7b.com/articles/2005/09/17/lighttpd-setup-on-textdrive-com">here</a>
+and <a
+href="http://weblog.0x7b.com/articles/2005/09/17/lighttpd-setup-on-textdrive-com-part-ii">here</a>.)</p>
+
+<p>The subject matter should stay mostly the same, i.e., whatever I
+feel like posting.  As for migrating away from <a
+href="http://www.wordpress.org">WordPress</a>, the hosting company (<a
+href="http://www.textdrive.com">TextDrive</a>) supports both <a
+href="http://www.php.net/">PHP</a> and <a
+href="http://www.ruby-lang.org/">Ruby</a>, so it's not an absolute
+imperative.  Nonetheless, I'd rather experiment with <a
+href="http://www.rubyonrails.com/">RoR</a> than muck around with PHP.
+The one and only experience that I've had with PHP was modifying
+WordPress to <a
+href="http://feedvalidator.org/docs/warning/EncodingMismatch.html">correctly</a>
+report the content type and deal with the combination of encoding as
+declared in the HTTP response and the <a
+href="http://web.resource.org/rss/1.0/spec">RSS</a> feed.  It could
+have been a property of the version of WordPress (1.2 at the time, I
+think), but I felt kind of dirty afterwards, the same way that I feel
+after writing an <a
+href="http://www.apple.com/macosx/features/applescript/">AppleScript</a>...</p>
+
+<p>The typo distribution includes a convenience script for migrating a
+WordPress database to typo, and it works well enough.  The only hitch
+in migrating articles from the old WordPress ID-based permalink scheme
+is that typo article numbers are allocated sequentially based on the
+number of published articles, while WordPress doles out IDs based on
+when the draft for the article was created or when the article was
+published, whichever came first.  Since some drafts remain
+unpublished, WordPress thinks that I have 128 articles with some gaps
+in the IDs, while typo thinks that I imported 121 with no gaps in the
+IDs.  It should be a quick exercise to cook up a controller to map the
+old IDs to new IDs.  At some point, I'll get the rest of the content
+from the <a href="http://radio.userland.com/">Radio</a> and <a
+href="http://www.snipsnap.org">SnipSnap</a> incarnations of pbblog
+imported as well.</p>
+

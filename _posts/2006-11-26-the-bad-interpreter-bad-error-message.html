@@ -1,0 +1,23 @@
+---
+layout: post
+title: "The \"bad interpreter\" Bad Error Message"
+permalink: the-bad-interpreter-bad-error-message.html
+categories: [bash, annoyance, bad, interpreter]
+---
+<p>Every so often, I try to run a shell script and get the otherwise unhelpful:</p>
+
+<pre class="code">: bad interpreter: No such file or directory</pre>
+
+<p>It always takes me a few minutes to remember that this is from MS-DOS line endings, and this is the message that there's no interpreter named <tt>/bin/bash^M</tt>.  The Emacs quickie to clean out the line endings is:</p>
+
+<pre class="code">C-x [ENTER] f unix</pre>
+
+<p>From the commandline,</p>
+
+<pre class="code">cat -v file</pre>
+
+<p>will show the <tt>^M</tt>, and</p>
+
+<pre class="code">cat filename | tr -d '\r' > newfile</pre>
+
+<p>will remove them.</p>

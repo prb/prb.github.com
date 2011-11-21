@@ -1,0 +1,47 @@
+---
+layout: post
+title: "A Simple Python Nanny for Typo"
+permalink: a-nanny-for-typo.html
+categories: [python, ruby, typo, availability]
+---
+<p>It seems like the <a href="http://typo.leetsoft.com">typo</a> instance that supports <a href="http://mult.ifario.us">mult.ifario.us</a> goes down at random times, since I stop by every so often and find the blog down.  If I were really a good guy, I'd look at it to figure out why, but the logs don't have any useful information.  It's easier to just assign a lightweight nanny to look after it; my choice is python (three guesses as to why not ruby, but read the script first):</p>
+
+<pre class="code">#!/usr/local/bin/python
+import os
+import time
+
+def kill_and_restart(procs):
+  print time.asctime(time.localtime()) + " - Killing processes..."
+  for proc in procs:
+    os.kill(int(proc.split(None)[0]),9)
+  if len(procs) != 0:
+    time.sleep(10)
+  print time.asctime(time.localtime()) + " - Restarting server..."
+  os.spawnve(os.P_NOWAIT,"/usr/local/sbin/lighttpd", ["lighttpd","-f",
+              "/home/pbrown/web/lighttpd/config/lighttpd.conf"],
+             {"PATH" : "/sbin:/bin:/usr/sbin:/usr/bin:" +
+               "/usr/local/sbin:/usr/local/bin"})
+  return
+  
+procs = []
+for line in os.popen("ps xw").read().splitlines():
+  if line.find("lighttpd") != -1 or line.find("ruby") != -1:
+    procs.append(line)
+status = "".join([x.split(None)[2] for x in procs])
+if len(procs) != 3 or "Z" in status or "T" in status:
+  kill_and_restart(procs)</pre>
+
+<p>The bit with the dictionary in the <tt>spawnve</tt> is needed because <tt>cron</tt> is pretty dumb about the environment that it provides to the processes it starts, and <tt>ruby</tt> isn't on the path.  To make sure that we're not being bad citizens:</p>
+
+<pre class="code">pbrown@chilco$ time ~/bin/nanny.py
+real    0m0.104s
+user    0m0.015s
+sys     0m0.015s</pre>
+
+<p>And then it goes in the crontab:</p>
+
+<pre class="code">MAILTO=paulrbrown&lt;at&gt;gmail&sdot;com
+@reboot /usr/local/sbin/lighttpd -f /home/pbrown/web/lighttpd/config/lighttpd.conf
+*/10 * * * * /home/pbrown/bin/nanny.py 2&gt;&#38;1 >> /home/pbrown/logs/nanny.out</pre>
+
+<p>This ensures that I'll get an email if a kick is needed, and only running every ten minutes should ensure that the script never overlaps with itself except under truly extraordinary circumstances.  This approach won't detect situations like internal deadlock or unresponsiveness, but neither would a <a href="http://mult.ifario.us/articles/2005/12/04/the-nagging-nanny-management-antipattern">nagging nannny.</a>  That has to be approached other ways.</p>

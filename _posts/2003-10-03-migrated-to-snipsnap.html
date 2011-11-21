@@ -1,0 +1,15 @@
+---
+layout: post
+title: "Migrated to SnipSnap"
+permalink: migrated-to-snipsnap.html
+---
+<p>After some experimentation, I've migrated my weblog from <a href="http://radio.userland.com/">Radio</a> to <a href="http://www.snipsnap.org">SnipSnap</a>. I had been considering <a href="http://www.rollerweblogger.org/">Roller</a>, but the additional wiki functionality in SnipSnap and relative ease of import made the decision for me. (As of November 2002, the Roller team was planning on adding adding an <a href="http://opensource.atlassian.com/projects/roller/secure/ViewIssue.jspa?key=ROL-20">import function</a> for Radio weblogs but hasn't started on it yet.)</p>
+
+<p>I've posted a How-To entry on <a href="http://blogs.fivesight.com/pbblog/index.php?p=86">Migrating Radio to SnipSnap</a>.</p>
+
+<p>After accidently corrupting the <a href="http://mckoi.com/database/">McKoiSQL</a> database a few times with hard shutdowns on the server, I followed these <a href="http://snipsnap.org/comments/SnipSnap+on+MySQL">instructions</a> to convert the backend to <a href="http://www.mysql.com/">MySQL</a>. It was also necessary to do:</p>
+
+<blockquote><pre>RENAME TABLE snip TO Snip;
+RENAME TABLE snipuser TO SnipUser;</pre></blockquote>
+
+<p>after dumping the database off my laptop to migrate to our hosted servers. (By the way, there may be a way to <a href="http://mckoi.com/database/FAQ.html#4_3">repair</a> the McKoiSQL database, but I didn't try it...)</p>

@@ -1,0 +1,12 @@
+---
+layout: post
+title: "Correct XML Handling: XOM 1.0 Announced"
+permalink: correct-xml-handling-xom-1-0-announced.html
+---
+<p>In the spirit of thoroughly reading and implementing specifications, <a href="http://www.cafeaulait.org/">Elliotte Rusty Harold</a> announced <a href="http://www.cafeconleche.org/XOM/">XOM 1.0</a>, his</p>
+
+<blockquote>"[...]tree-based API for processing XML with Java. XOM emphasizes correctness, ease-of-use, and performance, <em>in that order</em>."</blockquote>
+
+<p>Elliotte had it already, but anyone who thinks about spell-checking comments gets my respect...</p>
+
+<p>As for reasons to check out XOM, it separates <a href="http://www.cafeconleche.org/XOM/apidocs/nu/xom/Attribute.html">attributes</a> from <a href="http://www.cafeconleche.org/XOM/apidocs/nu/xom/Element.html#addNamespaceDeclaration(java.lang.String,%20java.lang.String)">namespace declarations</a>, and it provides a direct <a href="http://www.cafeconleche.org/XOM/apidocs/nu/xom/Node.html#toXML()"><code>toXML()</code></a> method for serializing <code>Node</code>s.</p>

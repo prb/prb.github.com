@@ -1,0 +1,132 @@
+---
+layout: post
+title: "perpubplat 0.9 &#8212; You're Looking at It"
+permalink: perpubplat-0-9-you-re-looking-at-it.html
+categories: [haskell, perpubplat, typo, blog]
+---
+
+<p>I <a
+href="http://mult.ifario.us/p/first-steps-with-haskell-for-web-applications">started</a>
+thinking about replacing <a href="http://www.typosphere.org/">Typo</a>
+back in October of 2006, and my home-brew project to do so is at the
+point where it's usable as a replacement.  In fact, I <a
+href="http://mult.ifario.us/p/administrivia">cut over</a> this
+morning, so you're looking at it right now.</p>
+
+<p>The current implementation represents an investment of around 60
+hours of learning and hacking time spent on Apache, FastCGI, Atom,
+XHTML, and Haskell.</p>
+
+<h3>Why Not <em>X</em>?</h3>
+
+<p>It is reasonable to ask "Why not use <em>X</em>?" where reasonable
+values for <em>X</em> include default blogging tools like <a
+href="http://www.wordpress.org">Wordpress</a> or <a
+href="http://rollerweblogger.org/project/">Roller</a>, a more <a
+href="http://blog.typosphere.org/articles/2007/12/30/typo-5-0-eugene-atget-is-out">recent
+version</a> of Typo, some language other than Haskell (like Erlang or
+OCaml or Scala), or an existing Haskell framework like <a
+href="http://happs.org/">HApps</a> or <a
+href="http://hope.bringert.net/about">Hope</a>.  The short answer is
+that I rolled my own because I wanted to roll my own.</p>
+
+<h3>Tooling and Methodology</h3>
+
+<p>I used the default tooling stack of <a
+href="http://www.gnu.org/software/emacs/emacs.html">Emacs</a> (the <a
+href="http://aquamacs.org/">Aquamacs</a> flavor) with <a
+href="http://www.haskell.org/haskell-mode/">haskell-mode</a>, <a
+href="http://www.haskell.org/ghc/">GHC</a>, and <a
+href="http://darcs.net">Darcs</a> for revision control.  My workflow
+loop was equivalently simple: I worked in Emacs until I thought that
+something might work and then loaded a module into <a
+href="http://www.haskell.org/ghc/docs/latest/html/users_guide/ghci.html"><code>ghci</code></a>
+to experiment with.</p>
+
+<h3>Basic Architecture</h3>
+
+<p>The basic architecture is straightforward; here are the highlights:</p>
+
+<ol>
+
+<li><em>Container:</em> FastCGI handler implemented in Haskell that
+parses request URIs to determine how to respond.  Apache with
+<code>mod_fastcgi</code> is configured as described in an earlier <a
+href="http://mult.ifario.us/p/wiring-haskell-into-a-fastcgi-web-server">post</a>.</li>
+
+<li><em>Storage:</em>  Plain text, simple file storage of entities (posts, comments,
+drafts, etc.) in a human editable, human readable format.</li>
+
+<li><em>Concurrency:</em> An event loop that listens on a Haskell <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent-Chan.html"><code>Chan</code></a>
+and manages a single in-memory instance of the data.  The event loop
+runs on a lightweight background thread that gets forked when Apache
+spins-up the FastCGI handler, and the approach is equivalent to the
+one I used for the <a
+href="http://mult.ifario.us/p/tuppence-tour-of-haskell-concurrency-constructs">sequence
+number generator</a> experiment.</li>
+
+<li><em>Browser Views:</em> XHTML rendering via the <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/xhtml"><code>Text.XHtml</code></a>
+combinator package.</li>
+
+<li><em>Atom Feeds:</em> A modified version of the lightweight Atom library that I <a
+href="http://mult.ifario.us/p/really-simple-atom-syndication">posted</a>
+on previously.</li>
+
+</ol>
+
+<h3>Early Returns and Open Items</h3>
+
+<p>My expectations are met so far.  The implementation is deployed on
+my virtual server at <a href="http://www.linode.com">Linode</a>.  Some
+ad hoc benchmarking shows that it will support sustained 50 req/sec
+loads with 10 or 20 concurrent clients without issue, and that's a
+stark contrast to Typo's performance of four requests per second
+(downhill and with the wind).  (Benchmarking traffic may well be
+saturating the network between here and there, so it might even do a
+bit more.)  Turning on <a
+href="http://www.haskell.org/ghc/docs/latest/html/users_guide/profiling.html">profiling</a>
+shows that most of the time is taken in string concatenation for a
+page view or a feed.  One option would be to set up <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.3">conditional
+GET</a> and some basic caching, and switching to <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/bytestring/Data-ByteString.html"><code>Data.ByteString</code></a>
+would be another.</p>
+
+<p>There are two open items I'm still thinking about: dynamic content
+in the browser and comments.</p>
+
+<p>For dynamic content in the browser, i.e., integration via
+Javascript clients to HTTP APIs, I experimented a bit with in-page
+widgets that do a bit of DOM rewriting to display fancy badges from <a
+href="http://del.icio.us">del.icio.us</a> or <a
+href="http://programming.reddit.com">Reddit</a> or shared items from
+Google Reader, but pages load more slowly, it requires clients to have
+Javascript enabled, and it's <a
+href="http://developer.mozilla.org/en/docs/Writing_JavaScript_for_XHTML#Problem:_I_Can.27t_Use_document.write.28.29">incompatible</a>
+with XHTML.  (The one compromise for the moment is the <a
+href="http://www.flickr.com">Flickr</a> montage, since it adds a
+splash of color.)  Instead, I'm planning to add additional background
+threads to the application to poll del.icio.us, Flickr, and other
+services via HTTP APIs and then vend cached data to sidebar widgets.</p>
+
+<p>The second item is support for comments, trackbacks, referrers, and
+the like, and that's just a matter of me deciding how I want to manage
+the workflow and ensure a good experience for repeat commenters or
+correspondents (i.e., people who link here).</p>
+
+<h3>Open Source?</h3>
+
+<p>I will make source code available as a <a
+href="http://darcs.net">Darcs</a> repository at some point in the near
+future, but it's not a priority for me.  The milestone I'd like to
+achieve before releasing the source is to have the <a
+href="http://www.haskell.org/cabal/">cabal</a> builds all squeaky
+clean, and that's not far off.  (Right now, things are just built with
+<code>ghc --make</code>.)  Even then, I still wouldn't call it "open
+source".  Calling something "open source", to me, should carry with it
+an implicit promise of usefulness and fitness for purpose, but
+as the name might suggest, I intend this to be a <em>personal</em>
+publishing platform.</p>
+

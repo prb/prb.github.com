@@ -1,0 +1,42 @@
+---
+layout: post
+title: "The Blog has Ears"
+permalink: the-blog-has-ears.html
+categories: [perpubplat, administrivia, comments]
+---
+
+<p>I opened up comments about a week ago on a provisional basis, and
+after fixing a couple of issues with ordering (and writing some <a
+href="http://datapr0n.com/repos/perpubplat/perpubplat/testsrc/Blog/Model/EntryTests.hs">unit
+tests</a>), it should be good for general consumption.</p>
+
+<p>A few design choices with the motivation behind them:</p>
+
+<ul>
+
+<li>No CAPTCHA, AJAX-only forms, or other silliness to keep out the
+spammers, since those approaches don't really work and effectively
+punish the user instead of the spammers.  In its place, moderation and
+a one-off platform that offers security through obscurity will have to
+do for starters.  If things become a problem, I'd prefer a Bayesian
+approach anyway.</li>
+
+<li>Comment formatting is provided through a simplistic macro language
+that's similar to the kind of markup supported in comments on Reddit.
+I thought about attempting to sanitize HTML or XHTML, but I wanted
+rigid limits on the types of formatting available and on the XHTML
+eventually stored in a comment and served in page views or feeds.</li>
+
+<li>Unapproved comments use a separate internal channel and
+persistence mechanism, so other than request routing, spammers won't
+impair the experience for legitimate users.</li>
+
+</ul>
+
+<h3>What's Next...</h3>
+
+<p>I've got a pipeline of other features that I'd like to add, like
+backlinks to referrers, draft management workflow, some social chrome
+for del.icio.us and Reddit, and a Javascript-free Flickr collage; and
+those will follow along at the rate of one every few weeks.</p>
+

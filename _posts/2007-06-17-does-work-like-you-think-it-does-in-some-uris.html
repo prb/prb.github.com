@@ -1,0 +1,36 @@
+---
+layout: post
+title: "<tt>..</tt> <em>Does</em> Work Like You Think It Does In (Some) URIs"
+permalink: does-work-like-you-think-it-does-in-some-uris.html
+categories: [url, wsdl, import, relative, uri]
+---
+<p>I recently came across a WSDL <a href="http://www.w3.org/TR/wsdl#_document-n">import</a> statement of the following form:</p>
+
+<pre class="code">&lt;wsdl:import namespace="some://uri"
+             location="../a/relative/path.wsdl" /></pre>
+
+<p>My first thought was that this is wrong, but I found out that it is actually standard behavior according to <a href="http://www.ietf.org/rfc/rfc2396.txt">RFC 2396</a>:</p>
+
+<blockquote>Within a relative-path reference, the complete path segments "." and ".." have special meanings: "the current hierarchy level" and "the level above this hierarchy level", respectively.  Although this is very similar to their use within Unix-based filesystems to indicate directory levels, these path components are only considered special when resolving a relative-path reference to its absolute form (Section 5.2).</blockquote>
+
+<p>The RFC also specifies a sensible set of fallbacks for determining the base URI, rendered in ASCII art:</p>
+
+<pre><small>.----------------------------------------------------------.
+|  .----------------------------------------------------.  |
+|  |  .----------------------------------------------.  |  |
+|  |  |  .----------------------------------------.  |  |  |
+|  |  |  |  .----------------------------------.  |  |  |  |
+|  |  |  |  |       &lt;relative_reference&gt;       |  |  |  |  |
+|  |  |  |  `----------------------------------'  |  |  |  |
+|  |  |  | (5.1.1) Base URI embedded in the       |  |  |  |
+|  |  |  |         document's content             |  |  |  |
+|  |  |  `----------------------------------------'  |  |  |
+|  |  | (5.1.2) Base URI of the encapsulating entity |  |  |
+|  |  |         (message, document, or none).        |  |  |
+|  |  `----------------------------------------------'  |  |
+|  | (5.1.3) URI used to retrieve the entity            |  |
+|  `----------------------------------------------------'  |
+| (5.1.4) Default Base URI is application-dependent        |
+`----------------------------------------------------------'</small></pre>
+
+<p>Nonetheless, this can still be a bit confusing.  In this case, the WSDL that I was looking at was in a source code download, and the referenced resources were not.  The best practice should be to <a href="http://www.w3.org/TR/xmlbase/">specify</a> an <tt>xml:base</tt> in every WSDL document that uses a relative <tt>wsdl:import</tt> location.  (The <a href="http://www.ws-i.org/Profiles/BasicProfile-1.1.html">WS-I Basic Profile</a> doesn't say anything about relative <tt>wsdl:import</tt> locations.)</p>

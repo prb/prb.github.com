@@ -1,0 +1,14 @@
+---
+layout: post
+title: "SWT/AWT Flaw for Eclipse on Mac OS X?"
+permalink: swt-awt-flaw-for-eclipse-on-mac-os-x.html
+---
+<p>On a lark, I decided to try the <a href="http://cap.xore.de/">Code Analysis Plugin</a> for Eclipse, but I immediately ran into an error:</p>
+
+<pre><small>Exception in thread "main" java.lang.InternalError: Can't start the AWT because
+Java was started on the first thread.  Make sure StartOnFirstThread is not
+specified in your application's Info.plist or on the command line
+	at java.lang.ClassLoader$NativeLibrary.load(Native Method)
+[etc.]</small></pre>
+
+<p>It turns out that this is the result of a <a href="https://bugs.eclipse.org/bugs/long_list.cgi?buglist=67384">fundamental disconnect</a> between SWT and AWT on the Mac!  A quick Google for <a href="http://www.google.com/search?q=Startonfirstthread&amp;btnG=Search">StartOnFirstThread</a> gives a snapshot of some of the afflicted plugins, none of which are on my must-have list, so it won't send me running for Netbeans or Linux.  Nonetheless, it does raise some doubts in my mind about both SWT and Mac OS X.</p>

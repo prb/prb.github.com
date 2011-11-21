@@ -1,0 +1,26 @@
+---
+layout: post
+title: "Where did the Exception go...?"
+permalink: where-did-the-exception-go.html
+categories: [java, whoops, concurrency, Executor, ThreadPool, Future]
+---
+<p>It's easy to get used to throwing away return values in Java.  For example, I don't usually need or use the return value from <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/util/Map.html#put(java.lang.Object,%20java.lang.Object)"><tt>Map#put(Object)</tt></a> or <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/util/Map.html#remove(java.lang.Object)"><tt>Map#remove(Object)</tt></a>.  Innocuous for collections, this can have unintended consequences (or, rather lack of consequences) if the return value that you're throwing away is a <a href="http://java.sun.com/javase/6/docs/api/java/util/concurrent/Future.html"><tt>Future</tt></a>.</p>
+
+<p>For example, suppose that you do something like:</p>
+
+<pre class="code">Executors.newSingleThreadExecutor().submit(new Runnable() {
+  public void run() {
+    throw new UnsupportedOperationException();
+  }
+});</pre>
+
+<p>The exception is lost and gone forever.  There are four choices, at least in the case of a <a href="http://java.sun.com/javase/6/docs/api/java/util/concurrent/ThreadPoolExecutor.html"><tt>ThreadPoolExecutor</tt></a> as above:</p>
+
+<ol>
+<li>Use <tt>execute(...)</tt> instead of <tt>submit(...)</tt>, in which case the exception will be thrown as though we'd just started a thread to run the <tt>Runnable</tt>.</li>
+<li>Capture the <tt>Future</tt> returned by <tt>submit(...)</tt>, which is actually a <tt>FutureTask</tt> in this case, and deal with completion.</li>
+<li>Subclass the <tt>ThreadPool</tt> and supply an <tt>afterExecute(Runnable,Throwable)</tt> implementation.</li>
+<li>Perform any exception handling (logging, retry, etc.) in the body of the <tt>run()</tt> method.</li>
+</ol>
+
+<p>My preference is for number 4, since it doesn't involve stack traces on the console, a fragile cast, or subclassing, but I'm open to other opinions.</p>

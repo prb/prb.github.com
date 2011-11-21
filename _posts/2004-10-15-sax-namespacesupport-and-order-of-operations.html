@@ -1,0 +1,34 @@
+---
+layout: post
+title: "SAX <code>NamespaceSupport</code> and Order of Operations"
+permalink: sax-namespacesupport-and-order-of-operations.html
+---
+<p><strong>Update:</strong>  I thought about this a little bit more (and did some experimentation), and some of what I said below is wrong.  See a more recent <a href="http://blogs.fivesight.com/pbblog/index.php?p=47">entry</a> for an update.</p>
+
+<p>You never know which SAX you're going to get.  For example, on my PowerBook, I get the version from the 1.4.2 JDK by default, and that (according to the source, at least) is SAX 2.0r2pre.  Using Xerces 2.6.2, I get SAX 2.0.1.</p>
+
+<p>The difference is an <code>IllegalStateException</code> if a <code>NamespaceSupport</code> instance is used incorrectly, but proper hygeine ensures portable (and correct) behavior.  A short digression on how SAX deals with namespaces is in order.</p>
+
+<p>No matter how you set the SAX namespace <a href="http://www.saxproject.org/?selected=namespaces">properties</a>, if namespaces are enabled, you'll get <code>startPrefixMapping</code> and <code>endPrefixMapping</code> events.  The <code>startPrefixMapping</code> events occur immediately <em>before</em> a <code>startElement</code> event, and <code>endPrefixMapping</code> events occur immediately <em>after</em> a <code>endElement</code> event.  The <code>startPrefixMapping</code> and <code>endPrefixMapping</code> events don't necessarily occur in a particular order or in a nested pattern.  (By the way, you care about prefix mappings separately from element and attribute names if you're working with QNames in attribute values or element content, e.g., in many XML schema-typed documents.)</p>
+
+<p>In a nutshell, the guideline for <code>NamespaceSupport</code> is:</p>
+
+<blockquote>Namespaces should only be declared on a fresh stack frame.  Specifically, the order of operations for a <code>NamespaceSupport</code> instance is <code>declarePrefix</code> invocations, <code>processName</code> (or other) invocations, and finally <code>pushContext</code>.</blockquote>
+
+<p>Here's why.  If you put some code like this in your <code>ContentHandler</code> implementation:</p>
+
+<pre class="code">private NamespaceSupport _nss;
+
+public void startPrefixMapping(String prefix, String uri)
+    throws SAXException
+{
+  _nss.declarePrefix(prefix,uri);
+}</pre>
+
+<p>You'll be pushing namespace bindings onto the current stack frame within the <code>NamespaceSupport</code> instance, and all of this will happen before the <code>startElement</code> event.</p>
+
+<p>SAX 2.0r2pre was more permissive, but SAX 2.0.1 "locks" the <code>NamespaceSupport</code> instance once it is used to resolve a name through the <code>processName()</code> method.  So, if you call <code>pushContext()</code> too soon and someone calls <code>processName()</code>, the stack frame will be "locked" when the next <code>startPrefixMapping</code> event shows up, resulting in an <code>IllegalStateException</code>.  Thus, in the code for the <code>startElement</code> event, the <em>last</em> thing to touch the <code>NamespaceSupport</code> should be <code>_nss.pushContext()</code> to create a fresh frame for the next round of <code>startPrefixMapping</code> events.</p>
+
+<p>This is perfectly reasonable, since adding prefix bindings might change the way a qualified name's parts would resolve.</p>
+
+<p>By the way, you don't really need to pay attention to the <code>endPrefixMapping</code> events unless you want to check up on the parser or event generator.  Instead, just implement the <code>endPrefixMapping</code> method with an empty body and ensure that a <code>_nss.popContext()</code> is the last thing in the <code>endElement</code> implementation that touches the <code>NamespaceSupport</code>.</p>

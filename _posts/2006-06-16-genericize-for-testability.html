@@ -1,0 +1,34 @@
+---
+layout: post
+title: "Genericize for Testability"
+permalink: genericize-for-testability.html
+categories: [java, generics, testing]
+---
+<p>I needed an algorithm to traverse a graph of relationships and test
+whether it was a connected tree or not, so I coded-up a quick (and
+relatively efficient) search.  No matter how many times I code graph
+searches, I know myself well enough to expect a couple of mistakes, so
+I went to write some tests after I'd finished with the algorithm.  The
+reason that I'd put off writing the tests was that the signature for
+my search was the following:</p>
+
+<pre class="code">static FancyIface findRoot(Map&lt;FancyIface,FancyIface[]> graph)</pre>
+
+<p><code>FancyIface</code> is an interface with a bazillion methods and where the API doesn't expose any implementations.  Rather than mocking instances of <code>FancyIface</code> for testing purposes, it makes sense to genericize the method:</p>
+
+<pre class="code">static &lt;T> T findRoot(Map&lt;T,T[]> graph)</pre>
+
+<p>and then code the tests with something nice and simple, like integers:</p>
+
+<pre class="code">public void testFindRoot() {
+  Map&lt;Integer,Integer[]> m = new HashMap&lt;Integer,Integer[]>();
+  m.put(1,new Integer[] {2,3});
+  m.put(2,new Integer[] {4});
+  // should return 1, as this is a tree rooted at 1.
+  assertTrue(Foo.findRoot(m) == 1);
+  m.put(3,new Integer[] {4});
+  // should return null because this is no longer a tree.
+  assertFalse(Foo.findRoot(m) == null);
+}</pre>
+
+<p>And that's it.</p>

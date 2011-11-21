@@ -1,0 +1,98 @@
+---
+layout: post
+title: "The Haskell Platform and Lessons Learned Elsewhere"
+permalink: the-haskell-platform-and-lessons-learned-elsewhere.html
+categories: [haskell, haskellplatform, opensource, forge, community, java, codehaus, hackage]
+---
+
+<p>Duncan Coutts <a href="http://blog.well-typed.com/?p=57">posted</a>
+some <a
+href="http://blog.well-typed.com/wp-content/uploads/2008/09/batteries.pdf">slides</a>
+from <a href="http://www.icfpconference.org/icfp2008/">ICFP</a> about
+the developing <a
+href="http://www.haskell.org/haskellwiki/Haskell_Platform">Haskell
+platform</a> &#8212; a set of "known good" and well-maintained
+libraries &#8212; and it is indeed on its way.  (Compare with the <a
+href="http://forge.ocamlcore.org/projects/batteries/">"batteries
+included"</a> effort for <a
+href="http://caml.inria.fr/ocaml/">OCaml</a>.)  Here's the stack from
+slide 13:</p>
+
+<table>
+<tr>
+<th>Haskell Platform</th><th>Linux Distro</th>
+</tr>
+<tr>
+<td>GHC</td><td>kernel</td>
+</tr>
+<tr>
+<td>Hackage</td><td>SourceForge</td>
+</tr>
+<tr>
+<td>Cabal</td><td><code>.rpm</code>/<code>.deb</code></td>
+</tr>
+<tr>
+<td>cabal-install</td><td><code>yum</code>/<code>apt-get</code></td>
+</tr>
+</table>
+
+<p>It's not in the charter for the Haskell Platform to make general
+improvements to <a href="http://hackage.haskell.org">Hackage</a>, but
+looking at the stack diagram I couldn't help but thing about a
+comparison against a language stack like Java (JDK, Maven, <a
+href="http://www.codehaus.org">Codehaus</a>, JCP) or Ruby (C ruby,
+rake, RubyGems, RubyForge) instead of Linux.  Quality, collaboration,
+and liveness are important aspects to assess for a project, but that's
+next to impossible without publicly accessible (and relatively
+standardized) bug tracking, source control, and discussion.  (Things
+like continuous integration are niceties but provide somewhat lower
+utility than the big three I just mentioned.)  With <a
+href="http://blog.well-typed.com/2008/09/hackage-hacking-and-demo/">754</a>
+libraries, there's a lot of meat and a lot of mystery that's
+impossible to assess at a glance from the current HackageDB <a
+href="http://hackage.haskell.org/packages/archive/pkg-list.html">package
+list</a> web interface.  The "heuristic" requirements for libraries in
+the Haskell platform does include a bug tracker and good basic hygeine
+(build portably with standard tools, proper releases, maintainer), but
+it's missing those other touchpoints.</p>
+
+<p>Lest I be perceived as casting stones, my experience is that even
+in the current circumstances and in spite of the lack of visibility,
+the Haskell community is vibrant and active.  The <a
+href="http://www.haskell.org/mailman/listinfo/haskell-cafe">Cafe</a>
+and <a href="irc://chat.freenode.net/haskell">IRC</a> are bustling,
+and troll-free and flame-free with very rare exceptions.  Community
+leaders are friendly and approachable.  Where I've found issues with
+libraries (resource <a
+href="http://mult.ifario.us/p/a-short-adventure-with-simplehttp">leak</a>
+in <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/HTTP">HTTP</a>,
+QName equality bug in <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/hxt">HXT</a>,
+attribute qualification issue in "light" <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/xml">xml</a>),
+maintainers have been helpful and receptive.  It would be even better
+if it was straightforward to collaborate with other users on dedicated
+mailing lists, post or consume bug fixes via <a
+href="http://darcs.net/">darcs</a> or <a
+href="http://git.or.cz/">git</a> branches (the <em>good</em> kind of
+fork), and track updates.  (Use of distributed VCS tools like Darcs
+and git exponentially increases the utility of a publicly available
+project VCS.)  There is no reason that this should be limited to just
+a blessed core, as it will help in the growth and refinement of other
+libraries as well.  Posting to Hackage should entail the creation of a
+mailing list, the provisioning of a bug tracker, and either a check-in
+of the source for the posted library to a central repository or a
+reference to a publicly available git or darcs repository.</p>
+
+<p>More than most and less than some, I appreciate the difficulties in
+providing community infrastructure, having observed <a
+href="http://fnokd.com/">Bob</a> and <a
+href="http://www.linkedin.com/in/bwalding">Ben</a> in action at the
+Haus and watched a top-level project at Apache (<a
+href="http://ode.apache.org">ODE</a>) from proposal through
+graduation.  I also appreciate the role of the infrastructure in
+creating and reinforcing community &#8212; it's no accident that a fair
+proportion of the most widely used open souce libraries on the Java
+platform have grown either at Apache or at the Codehaus.</p>
+

@@ -1,0 +1,69 @@
+---
+layout: post
+title: "Ahhh...  That's Better"
+permalink: ahhh-that-s-better.html
+categories: [perpubplat, typo, reliability]
+---
+
+<p>I <a href="http://mult.ifario.us/p/administrivia">cut over</a> to
+perpubplat about a week ago, so it's worth a quick check to see if I
+met my goal of getting a few more nines.</p>
+
+<p>On the left, we have an every-30-minutes response time chart for
+the Typo version of this site, and on the right, the perpubplat
+version. (The charts are from the free monitoring service from <a
+href="http://mon.itor.us">mon.itor.us</a>.)  The Typo configuration
+used Apache2 with <code>mod_fcgid</code> (see my earlier <a
+href="http://mult.ifario.us/p/apache2-mod_fcgid-rails">post</a> on the
+subject) configured for seven processes with a maximum 60-minute
+lifetime; the perpubplat configuration uses Apache2 with
+<code>mod_fastcgi</code> configured for a single process that runs on
+50 lightweight Haskell threads internally.  (N.B.: The graphs use different
+scales on the y-axis.)</p>
+
+<p style="align: center;"><img src="http://mult.ifario.us/files/typo_reliability.png" alt="mon.itor.us graph for Typo install of mult.ifario.us" />&#160;<img src="http://mult.ifario.us/files/perpubplat_reliability.png" alt="mon.itor.us graph for perpubplat install of mult.ifario.us" /></p>
+
+<p>The graph hints that things are better, but some quick text
+processing on server logs make the difference more explicit.  Here's
+an analysis of the response codes from the most recent log file for
+perpubplat:</p>
+
+<pre class="code"><b>$</b> head -n 1 multifarious-combined.log | awk '{print $4}'
+[07/Jan/2008:00:32:50
+<b>$</b> ^head^tail
+[11/Jan/2008:15:03:50
+<b>$</b> awk '{print $9}' multifarious-combined.log | sort | uniq -c | sort
+      1 400
+      2 206
+     73 304
+   1572 302
+   2976 404
+   5574 301
+  14772 200</pre>
+
+<p>No <code>500</code>s.  (Most of the <code>404</code>'s are comment
+spammers trying to hit old URLs for comments.)  Here's the same
+analysis for Typo from a week back in December of last year
+(2007):</p>
+
+<pre class="code"><b>$</b> zcat mult.ifario.us-access.log.3.gz | head -n 1 | awk '{print $4}'
+[10/Dec/2007:19:49:06
+<b>$</b> ^head^tail
+[19/Dec/2007:14:28:17
+<b>$</b> zcat mult.ifario.us-access.log.3.gz | awk '{print $9}' | sort | uniq -c | sort
+      5 206
+      5 400
+     <span style="color: red;">23 503</span>
+     30 302
+    237 404
+   1098 301
+   <span style="color: red'">2259 500</span>
+   9319 304
+  20885 200</pre>
+
+<p>A change from one-ish nines (-log<sub><small>10</small></sub>
+(33861 - 2282)/33861 ~ 1.17) to 100% uptime is a positive change, and
+the CPU trace for the virtual server suggests that the perpubplat
+configuration uses a tiny fraction of the machine resources of the
+Typo configuration.</p>
+

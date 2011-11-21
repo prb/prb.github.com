@@ -1,0 +1,25 @@
+---
+layout: post
+title: "Kata 19 or BFS/DFS by Any Other Name Still Smells as Sweet"
+permalink: kata-19-or-bfs-dfs-by-any-other-name-still-smells-as-sweet.html
+---
+<p>I ran across <a href="http://pragprog.com/pragdave">Dave Thomas</a>'s <a href="http://pragprog.com/pragdave/Practices/Kata/KataNineteen.rdoc,v">kata 19</a> yesterday and decided to give it a quick go.</p>
+
+<p>Based on Dave's supplied dictionary of 45,425 words, the graph of transitions, e.g., "cat" and "cot" are connected by an undirected edge, only contains 15,402 edges. (This shouldn't be all that surprising, since there are plenty of isolated words, e.g., "prefix" and "suffix".) With a couple of minor improvements to the obvious algorithm and written using collections for convenience but not necessarily speed, a Java program can sort this out in around 45 seconds on my laptop.</p>
+
+<p>The rest of the problem boils down to <a href="http://www.ics.uci.edu/~eppstein/161/960215.html">breadth-first search (BFS) and depth-first search (DFS)</a> in the graph plus a little common sense or cleverness. A wandering algorithm to find a (any) path connects "ruby" and "code" in 2-3 seconds with a relatively long chain, e.g.:</p>
+
+<blockquote><code>ruby, rubs, dubs, tubs, tabs, cabs, caps, raps, laps, lips, lies, vies, vier, bier, pier, tier, tied, lied, lieu, lien, lion, loon, Moon, noon, nook, hook, hood, wood, word, wore, lore, lyre, lure, lurk, lark, dark, bark, bars, bats, vats, vans, vane, vine, sine, site, bite, bile, pile, pale, pole, mole, move, cove, code</code><br />
+<code><strong>length 54, 3182ms</strong></code></blockquote>
+
+<p>A slightly modified BFS search, however, constructs the optimal:</p>
+
+<blockquote><code>ruby, rubs, robs, robe, rode, code</code><br />
+<code><strong>length 6, 1249ms</strong></code></blockquote>
+
+<p>in just over a second, and given the relatively sparse nature of the graph, this shouldn't be all that surprising. (It sounds like Dave's solution isn't symmetric in the endpoints, but mine is, so turning "code" to "ruby" or "ruby" to "code" is equivalent.)</p>
+
+<p>The next question is whether the whole graph is connected if insertions and deletions are allowed, e.g., "cat" is adjacent to "coat".</p>
+
+<hr />
+<p><strong>Update:</strong> Some <a href="http://pragprog.com/pragdave/Practices/Kata/KataNineteen.rdoc,v">comments</a> in Dave's blog indicate that he's touched up his algorithm.</p>

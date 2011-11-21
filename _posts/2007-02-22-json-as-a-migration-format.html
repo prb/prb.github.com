@@ -1,0 +1,105 @@
+---
+layout: post
+title: "JSON as a Migration Format"
+permalink: json-as-a-migration-format.html
+categories: [json, ruby, typo, haskell]
+---
+<p>I'm making slow progress on my personal publishing platform rewrite in Haskell (see earlier posts <a href="http://mult.ifario.us/articles/2006/10/11/first-steps-with-haskell-for-web-applications">here</a> and <a href="http://mult.ifario.us/articles/2006/10/18/more-haskell-and-personal-publishing-platform-ramblings">here</a>), so herein part 3 of <code>n</code>, wherein I experiment with data migration and an embarrassingly simple data model.  A forthcoming part 4 will be really simple Atom serialization.</p>
+
+<h3>Data Out, Data In</h3>
+<p>As I experiment with the new platform, I'd like a way to move the data from the <a href="http://www.typosphere.org">typo</a> instance into the new environment on-demand; this post is my lab notebook for the export/import experiment.</p>
+
+<p>One of the things that Rails has gotten 100% right is the ability to (easily) access configured environments via interactive (<code>script/console</code>) or scripting (<code>script/running</code>) front-ends.  (Using a framework like <a href="http://www.springframework.org">Spring</a> in the Java space can provide similar functionality by constructing an application context, but it's more awkward to separate out the services that the runtime container would be providing.)  My first thought on exporting was to use <a href="http://www.yaml.org/">YAML</a>, but the significant whitespace and cryptic annotations (<a href="http://yaml.org/spec/current.html#literal%20style/syntax">"<code>|</code>"</a> for a free-form text block with a trailing linebreak and <a href="http://yaml.org/spec/current.html#chomping/">"<code>|-</code>"</a> for a free-form text block without a trailing linebreak) just rubbed me the wrong way.  <a href="http://www.json.org/">JSON</a> turns out to be a better choice because ActiveRecord supports JSON export (via <a href="http://railsmanual.com/module/ActiveSupport::JSON"><code>ActiveSupport::JSON</code></a>), and there are a couple of JSON libraries for Haskell.   <a href="http://www.tom.sfc.keio.ac.jp/%7Esakai/d/data/200604/JSON.hs">One</a> is a predecessor version of the <a href="http://darcs.haskell.org/SoC/haskellnet/Text/JSON.hs">other</a>, and I'm going to work with the earlier version because it has no dependencies other than a baseline GHC 6.6 install.</p>
+
+<p>Getting an entry out to play with is a piece of cake:</p>
+
+<pre class="code">./script/runner 'puts Article.find_by_state("Published").to_json' \
+  > /tmp/entry.json</pre>
+
+<p>Parsing the JSON is similarly straightforward:</p>
+
+<pre class="code">$ ghci
+   ___         ___ _
+  / _ \ /\  /\/ __(_)
+ / /_\// /_/ / /  | |      GHC Interactive, version 6.6, for Haskell 98.
+/ /_\\/ __  / /___| |      http://www.haskell.org/ghc/
+\____/\/ /_/\____/|_|      Type :? for help.
+
+Loading package base ... linking ... done.
+Prelude> :load /tmp/JSON.hs
+[1 of 1] Compiling JSON             ( /tmp/JSON.hs, interpreted )
+Ok, modules loaded: JSON.
+*JSON> entry &lt;- P.parseFromFile json "/tmp/entry.json"
+Loading package parsec-2.0 ... linking ... done.
+Right (Object (fromList [("attributes",Object (fromList [
+[...]</pre>
+
+<p>(<code>JSON.hs</code> aliases <a href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-Map.html"><code>Data.Map</code></a> as <code>M</code> and <a href="http://www.haskell.org/ghc/docs/latest/html/libraries/parsec/Text-ParserCombinators-Parsec.html"><code>Text.ParserCombinators.Parsec</code></a> as <code>P</code>, so that's where the <code>P.parseFromFile</code> is coming from.)  The map of values is wrapped up a bit, but a couple of simple functions will get it out from behind the type constructors:</p>
+
+<pre class="code">*JSON> let unR = \(Right r) -> r
+*JSON> let unO = \(Object o) -> o
+*JSON> :t (unO.unR) entry
+(unO.unR) entry :: M.Map String Value</pre>
+
+<p>which gets us down to the level of the first map with one entry under the key <code>"attributes"</code>.  To get the map of attributes we want out:</p>
+
+<pre class="code">*JSON> let m = unO ((((M.!).unO.unR) entry) "attributes")
+*JSON> m
+fromList [("allow_comments",String "1"),("allow_pings",String "1"),...</pre>
+
+<p>(Haskell uses <code>!</code> for dereferencing keys in a <code>Data.Map</code>.)  And now the components of the entry are easy to extract:</p>
+
+<pre class="code">*JSON> let atts = ((M.!) m)
+*JSON> atts "allow_comments"
+String "1"
+*JSON> atts "updated_at"
+String "2006-09-15 02:12:45"
+*JSON> atts "body" 
+String "&lt;p>Although I really do like the...</pre>
+
+<p>The first-cut data model for entries looks like this:</p>
+
+<pre class="code">data BlogPost = BlogPost { p_title :: String,
+               p_summary :: Maybe String,
+               p_permalink :: String,
+               p_metadata :: PostMetadata,
+               p_body :: String,
+               p_tags :: [String],
+               p_uid :: String,
+               p_comments :: [BlogPost]
+             }
+        deriving (Show)
+
+data PostMetadata = PostMetadata { m_created :: CalendarTime,
+                   m_publish :: CalendarTime,
+                   m_updated :: CalendarTime,
+                   m_author :: PostAuthor,
+                   m_published :: Bool }
+          deriving (Show)
+
+data PostAuthor = PostAuthor { p_name :: String,
+                   p_uri :: Maybe String,
+                   p_email :: Maybe String,
+                   p_showEmail :: Bool
+                 }
+          deriving (Show)</pre>
+
+<p>And interpolating from typo's model to the new model is just putting the fields in the right place with a little bit of date munging, since the new model has the expectation that dates are represented as Haskell <a href="http://haskell.org/ghc/docs/latest/html/libraries/base/System-Time.html#3"><code>CalendarTime</code></a>.  The reuse of the <code>BlogPost</code> structure for comments is intentional, both for Atom syndication and to support threaded comments.</p>
+
+<p>Pulling all of the entries out is also straightforward:</p>
+
+<pre class="code">$ ./script/runner 'puts (Article.find_all_by_state("Published")).to_json' \
+  > /tmp/entry.json
+$ ./script/runner 'puts (Article.find_all_by_state("ContentState::Published")).to_json' \
+  >> /tmp/entry.json</pre>
+
+<p>and pulling comments and trackbacks is a similar exercise:</p>
+
+<pre class="code">$ ./script/runner 'puts (Comment.find_all_by_state("ContentState::Ham")).to_json' \
+  > /tmp/comments.json
+$ ./script/runner 'puts (Trackback.find_all_by_state("ContentState::Ham")).to_json' \
+  > /tmp/trackbacks.json</pre>
+
+<p>although it takes a little doing to collate comments and trackbacks with their parent posts.  So far, so good &#8212; unlike any of the other migrations (<a href="http://mult.ifario.us/articles/2003/10/04/migrating-radio-to-snipsnap">Radio&#160;Userland&rarr;SnipSnap</a>, <a href="http://mult.ifario.us/articles/2004/08/16/migrated-from-snipsnap">SnipSnap&rarr;WordPress</a>, and <a href="http://mult.ifario.us/articles/2005/11/26/migrated-to-typo">WordPress&rarr;typo</a>) I've done, this looks to be neither lossy nor labor-intensive.</p>
+
+<p>As an aside, over about four years of blogging (2003-02-17 through the present), I've accumulated the equivalent of ~110 single-spaced pages of content.</p>

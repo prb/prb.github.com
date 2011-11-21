@@ -1,0 +1,16 @@
+---
+layout: post
+title: "Just a Scoatch More Memory"
+permalink: just-a-scoatch-more-memory.html
+categories: [duh, oops, software, c]
+---
+
+<p>After I saw <a href="http://goldfish-geek.blogspot.com/2007/11/candidate-for-best-comment-ever.html">post</a> about a <a href="http://www.worsethanfailure.com/">WTF</a>-worthy comment a while back, I had meant to post this gem, which I'll paraphrase from memory:</p>
+
+<pre class="code">foo *f;
+f = (foo *) malloc(sizeof(foo)+4); // seems about right</pre>
+
+<p>The comment was the tip that code elsewhere was abusing the allocated memory, and the developer had added the padding to avoid segmentation faults...</p>
+
+<p>There were quite a few similar gems lurking around in that particular app, like a <code>catch</code> block wrapped around printing "Whoops!" to <code>stdout</code>, which wouldn't be so bad if it hadn't been cut-and-pasted all over the place, making it difficult to determine where a "Whoops!" on <code>stdout</code> for the app actually came from...</p>
+

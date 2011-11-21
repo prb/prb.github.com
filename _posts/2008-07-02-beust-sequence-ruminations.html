@@ -1,0 +1,85 @@
+---
+layout: post
+title: "Beust Sequence Ruminations"
+permalink: beust-sequence-ruminations.html
+categories: [puzzles, combinatorics, haskell, java]
+---
+
+<p><a href="http://beust.com">C&#233;dric</a> <a href="http://beust.com/weblog/archives/000491.html">posted</a> a nice puzzle on his blog:</p>
+
+<blockquote><p>[W]rite a counter function that counts from 1 to max
+but only returns numbers whose digits don't repeat.</p></blockquote>
+
+<p><a href="http://crazybob.org">Bob</a> <a
+href="http://twitter.com/crazybob/statuses/846377496">tweeted</a>
+about a minimal <a
+href="http://crazybob.org/BeustSequence.java.html">solution</a> in
+terms of execution time, although (like the guy in the <a
+href="http://stuffthathappens.com/blog/2008/07/02/script-kiddies/">cartoon</a>)
+I still like my Haskell version of the sequence (up to some details
+with use of <code>Data.Int.Int64</code> and typing the enumeration):</p>
+
+<pre class="code">f k = [ n | n &lt;- [1..k], (length . show $ n) == (length . nub . show $ n) ]</pre>
+
+<p>And the function to compute the maximum gap:</p>
+
+<pre class="code">
+drop_tail k = reverse . (drop k) . reverse
+by_pairs u = zip (drop 1 u) (drop_tail 1 u)
+g k = maximum . map (uncurry (-)) . by_pairs . f $ k</pre>
+
+<p>This approach, while visually appealing, is unacceptably slow, even
+with some of the usual optimizations applied. The fact is that any
+solution that is implemented in terms of testing all of the numbers
+between <code>0</code> and <code>k</code> will perform orders of
+magnitude more poorly than the recursive style that Bob's using. But
+how would I know that...?</p>
+
+<h3>Subfactorials, Derangements, and Chooses</h3>
+
+<p>A <em>derangement</em> is a permutation with no fixed points, e.g.,
+<code>(123)</code> is a derangement of the set <code>{1,2,3}</code>,
+but <code>(12)</code> is not because it maps <code>3</code> to
+<code>3</code>. Like the number of permutations of an
+<code>n</code>-element set (<code>n!</code>), the number of
+derangements has its own function called the subfactorial and written
+<code>!n</code>. MathWorld has a decent <a
+href="http://mathworld.wolfram.com/Derangement.html">write-up</a>,
+with the major takeaway for present purposes being that <code>!n ~
+n!</code>.</p>
+
+<p>The number of elements in C&#233;dric's set, for a fixed radix
+<code>n</code> is the sum from <code>k=0</code> up to <code>n</code>
+of <code>!k (n choose k)</code>, and that's <em>much</em> smaller than
+<code>n<sup>n</sup></code>. (This reminds me of the whole "bad
+shuffle" <a
+href="http://mult.ifario.us/p/gap-bad-shuffle-and-playing-with-permutations">meme</a>
+from a long time ago.)</p>
+
+<p>Just how much less work does the enumeration approach require than
+the iteration approach? Here's a quick snippet to compute the number
+of derangements and the corresponding Beust number for a given radix:</p>
+
+<pre class="code">fac :: Integer -> Integer
+fac 0 = 1
+fac n = n * (fac (n-1))
+
+choose :: Integer -> Integer -> Integer
+choose n k = (fac n) `div` ((fac k) * (fac (n-k)))
+
+d :: Integer -> Integer
+d 1 = 0
+d 2 = 1
+d n = (n-1) * ( d (n-1) + d (n-2) )
+
+b :: Integer -> Integer
+b n = sum [ (d k) * (n `choose` k) | k &lt;- [ 1..n ] ]</pre>
+
+<p>Then, <code>b<sub>10</sub></code> is <code>3628799</code>, so a
+solution like Bob's should have around a 2500-fold advantage over a
+more brute force method. And that advantage gets <em>huge</em> in
+short order. As reminder of how much bigger <code>n<sup>n</sup></code>
+is than <code>n!</code> and friends, <code>26<sup>26</sup></code> is
+roughly <code>15,264,691,107</code> times larger than
+<code>b<sub>26</sub></code>...</p>
+

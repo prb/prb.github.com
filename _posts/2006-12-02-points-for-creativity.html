@@ -1,0 +1,27 @@
+---
+layout: post
+title: "Points for Creativity"
+permalink: points-for-creativity.html
+categories: [java, wtf]
+---
+<p>I've been bushwhacking my way through some Java code and came across the following block of code in a test class:</p>
+
+<pre class="code">int count = 0;
+for(Long id : results){
+  switch (count++) {
+    case 0:
+      Assert.assertEquals(2L, id);
+      break;
+    case 1:
+      Assert.assertEquals(3L, id);
+      break;
+    }
+}</pre>
+
+<p>which has to be one of the oddest bits of Java code that I've laid eyes on.  It's not quite a <a href="http://thedailywtf.com/">WTF</a>, but it's close.  It is definitely the only time that I've seen a <tt>switch</tt> clause with side-effects.  The original author intended simply:</p>
+
+<pre class="code">assert results.size() == 2;
+assert results.contains(2L);
+assert results.contains(3L);</pre>
+
+<p>Especially in a test case, it's acceptable (if not desireable!) to be explicit even at the expense of some brevity.</p>

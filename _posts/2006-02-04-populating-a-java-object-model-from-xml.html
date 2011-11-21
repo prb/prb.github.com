@@ -1,0 +1,63 @@
+---
+layout: post
+title: "Populating a Java Object Model from XML"
+permalink: populating-a-java-object-model-from-xml.html
+categories: [xml, bpel, pxe, haskell]
+---
+<p>This post describes an approach to populating a Java object model from an XML document.  It's an approach that I came up with when working on a particular parsing problem.</p>
+
+<p><b>Updates: </b> A couple of people have mentioned <a href="http://xstream.codehaus.org/">XStream</a> and <a href="http://xmlbeans.apache.org/">XMLBeans</a>, but those fail my tests below.  XStream is a serialization tool (as its <a href="http://xstream.codehaus.org/faq.html">docs</a> say), and XMLBeans was chubby in terms of the size of the libraries.  For what it's worth, if I were willing to suffer a large dependency, XMLBeans version 2 looks pretty good in that it provides a token-oriented interface and location information (via <a href="http://xmlbeans.apache.org/docs/2.0.0/reference/org/apache/xmlbeans/XmlLineNumber.html"><code>XmlLineNumber</code></a>).</p>
+
+
+<h3>A closet full of clothes, and not a thing to wear...?</h3>
+
+
+
+<p>My self-imposed requirements were as follows:</p>
+
+
+
+<ul>
+
+<li>Populate a pre-existing Java object model from SAX events.</li>
+
+<li>Support multiple XML dialects mapping <em>directly</em> to a single object model.</li>
+
+<li>Both the XML dialects and the object model are specified <em>a priori</em>.</li>
+
+<li>Impose <em>zero</em> additional dependencies beyond SAX; ideally, the implementation will be just a fancy <code>ContentHandler</code>.</li>
+
+<li>Expose SAX location information from the parse (e.g., line and column) to the target object model during construction.</li>
+
+<li>Expose namespace context from the parse so that expressions like QNames and XPaths in attribute values can be properly post-processed.</li>
+
+<li>Use programmatic configuration, not properties files or XML or annotations to the schema.</li>
+
+</ul>
+
+
+
+<p>For my particular application, the XML documents would be BPEL processes in either flavor (1.1 or 2.0), and the target object model would be PXE's <a href="http://cvs.fivesight.com/viewrep/PXE/pxe/bom">BPEL Object Model</a> or &#8220;BOM&#8221;.  There were additional requirements around handling extensions, but those aren't directly relevant to the approach that I settled on.</p>
+
+
+
+<p>Now, surely someone else has had the same or a similar set of requirements, more or less the same sensibilities, and the altruism to post it as open source...</p>
+
+
+
+<p>Of the various approaches to XML binding (the <a href="https://bindmark.dev.java.net/">bindmark</a> project has a good list), I didn't find any that fit the requirements.  Many tools generate an object model from a schema, and while the generated models don't usually meet my taste for API ergonomics (<a href="https://jaxb.dev.java.net/1.0/">JAXB 1.0</a> had a particularly rank code smell when applied to the BPEL4WS&#160;1.1 schema...), that would be one way to go if additional dependencies were acceptable.  (The idea would be to use the generated object models as <a href="http://www.martinfowler.com/eaaCatalog/dataTransferObject.html">data transfer objects</a> and then maintain multiple mappings onto the internal object model as <a href="http://c2.com/cgi/wiki?DomainObject">domain objects</a>.)  <a href="http://jibx.sourceforge.net/">JiBX</a> looked particularly interesting, but it requires <a href="http://www.extreme.indiana.edu/xgws/xsoap/xpp/">XPP3</a> and uses bytecode enhancement, which would rule out the simultaneous support for multiple XML dialects without intermediate object models.  <a href="http://jakarta.apache.org/commons/digester">Digester</a> has approximately the right flavor, but the target object model wasn't particularly JavaBean-ish and location information wasn't exposed.</p>
+
+<p>One of the flaws in schema-driven bindings is that XML schema rarely (if ever) encapsulates all of the semantics of the XML language that it can be used to (loosely) validate, so automated or generated bindings do at most a partial job.</p>
+
+<h3>The Idea and Outcomes</h3>
+
+<p>So I came up with a different approach.  The basic idea was to construct a graph of event consumers that closely resembles the grammar for the XML document and use SAX events to walk the graph.  Each edge of the graph is decorated with a function that accepts a single SAX event and returns true or false, e.g., a QName with or without an attribute mask, or a non-whitespace characters event.  The edges incident to a vertex are ordered, and events are matched (or not) according to the ordering.</p>
+
+<p>From another perspective, this uses the XML parser like a <a href="http://en.wikipedia.org/wiki/Lexer">lexer</a> and the graph like a <a href="http://en.wikipedia.org/wiki/Parser">parser</a>.</p>
+
+<p>From yet another perspective, the idea is rather like <a href="http://www.haskell.org">Haskell</a>'s pattern matching, in which case the whole thing could be looked at as a collection of functions that accept a list of SAX events and return an object.  Each function consumes the head event from the list, selects another function to pass the tail of the list to, and adds the result of the call to the current object.  (The presumption is that objects know how to add various kinds of children or metadata to themselves.)  Of course, Haskell wasn't an option.  (And of the two Jaskells, <a href="http://www.scdi.org/~avernet/projects/jaskell/">Jaskell</a> has a few too many moving parts in the toolchain for my taste, and <a href="http://yan.codehaus.org/jaskell/">Jaskell</a> doesn't have pattern matching.)</p>
+
+<p>My first-pass implementation in Java (PXE's <a href="http://svn.intalio.org/viewrep/PXE-svn/trunk/pxe/bpel-parser">bpel-parser</a> module) did the job nicely but wasn't quite as pretty at the code level as I might have liked, as it required a a good amount of boilerplate.  That said, and in-line with the lexer/parser observation above, the boilerplate and transition set could easily be generated from a RELAX NG grammar.</p>
+
+<p>Considering that <a href="https://jaxb.dev.java.net/">JAXB 2</a> looks slick, has a non-regressive license, will be part of both <a href="http://java.sun.com/javaee/5/index.jsp">Java EE 5</a> and <a href="https://mustang.dev.java.net/">Java SE 6</a>, and supports passing through some XML fragments in raw form, it would be a difficult call if I faced the same problem at present.  (Like JAXB&#160;1, JAXB&#160;2 doesn't expose location information, but location information can be added to the XML document as content using some SAX tricks, but that's a hack.)That said, the need to support semantics beyond those present in the schema might very well drive me down the same path again.  </p>
+

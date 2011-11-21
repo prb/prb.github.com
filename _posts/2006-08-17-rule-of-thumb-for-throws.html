@@ -1,0 +1,17 @@
+---
+layout: post
+title: "Rule of Thumb for Throws"
+permalink: rule-of-thumb-for-throws.html
+categories: [java, checkedexception, uncheckedexception, exception, pmd, xpath, nodeset]
+---
+<p>The subject of when to use the <code>throws</code> declaration on a method definition in Java came up in a discussion recently, and my personal preference can be expressed in one simple rule:</p>
+
+<blockquote>An exception belongs in the <code>throws</code> declaration <em>if and only if</em> it is actually thrown in the body of the method.</blockquote>
+
+<p>In fact, it's so simple that it can be expressed in <a href="http://pmd.sourceforge.net/">PMD</a> 's XPath syntax:</p>
+
+<pre class="code">//MethodDeclaration/NameList/Name[\
+@Image != ../../Block//ThrowStatement//\
+AllocationExpression/ClassOrInterfaceType/@Image]</pre>
+
+<p>(The backslashes are linebreaks and not part of the actual expression.)  The expression might look a little odd, but it works because a string (a member of the <code>throws</code> declaration) and a nodeset (all of the <code>throw new&#160;Foo</code> in the method body) are <a href="http://www.w3.org/TR/xpath#booleans">equal</a> according to <a href="http://www.w3.org/TR/xpath">XPath 1.0</a> if the nodeset contains a node with the same string value as the string.</p>

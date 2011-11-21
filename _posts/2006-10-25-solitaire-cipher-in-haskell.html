@@ -1,0 +1,172 @@
+---
+layout: post
+title: "Solitaire Cipher in Haskell"
+permalink: solitaire-cipher-in-haskell.html
+categories: [haskell, solitaire, cipher, rubyquiz, deckofcards]
+---
+<p>Jim Burton started a <a href="http://www.nabble.com/split-string-into-n-parts-tf2496941.html#a6960346">thread</a> on <a href="">haskell-cafe</a> about working the <a href="http://www.rubyquiz.com/">Ruby Quiz</a> problems in Haskell, and I decided to give it a go.  I can't say that I'll work them all, but here's my solution to the <a href="http://www.rubyquiz.com/quiz1.html">first problem</a> &#8212; implementing Bruce Schneier's <a href="http://www.schneier.com/solitaire.html">Solitaire encryption algorithm</a>.  Among other things, a solution provides a quick walk-through of using Haskell's built-in <code>Enum</code> classes and list operations.</p>
+
+<h4>Step  1: A Deck of Cards</h4>
+
+<p>One of the ingredients for the cipher is a deck of 52 cards, numbered bridge-style from the ace of clubs through the king of spades and then followed by two jokers with suits "A" and "B".  I'd like to implement the deck as a 2-tuple of a suit <code>Enum</code>, where the two jokers come from different suits, and a face <code>Enum</code>, like so:</p>
+
+<pre class="code">data Suit = Clubs | Diamonds | Hearts | Spades | A | B
+            deriving (Enum, Show, Bounded, Eq)
+
+data Face = Ace | Two | Three | Four | Five | Six | Seven 
+          | Eight | Nine | Ten | Jack | Queen | King | Joker
+            deriving (Enum, Show, Bounded, Eq)</pre>
+
+<p>The "<code>deriving</code>" expression is worth some explanation after a 30-second, 30,000-foot look at Haskell's type system.  A class in Haskell is a set of assertions of the form "there exists a function <code>f</code> with signature..." and potentially some default definitions, and a type can be an instance of the class if it has functions that meet the assertions.  For example, the <code>Eq</code> class is defined:</p>
+
+<pre class="code">(==), (/=) :: a -> a -> Boolean
+
+x /= y = not (x == y)
+x == y = not (x /= y)</pre>
+
+<p>For a given type that would play the role of the <code>a</code>, it's up to the implementer to supply <code>(==)</code> and <code>(/=)</code> functions with the correct signatures.  The second and third statements mean that if the implementer only defines one of the two, the other is defined in the standard way.  Nonetheless, the precise semantics of the functions &#8212; e.g., whether <code>==</code> remotely resembles "equals" or whether <code>x==y</code> implies <code>not(x/=y)</code> &#8212; are up to the implementer.</p>
+
+<p>Back to the <code>Suit</code> and <code>Face</code> enumerated type definitions, the <code>deriving</code> tells Haskell that the type is an instance of the listed classes by inheriting default implementations.  In simplest terms:</p>
+
+<ul>
+<li>An instance of <a href="http://www.zvon.org/other/haskell/Outputprelude/Enum_c.html"><code>Enum</code></a> has (at least) functions that convert from and to integer indices.</li>
+<li>An instance of <a href="http://www.zvon.org/other/haskell/Outputprelude/Bounded_c.html"><code>Bounded</code></a> has a least element and a greatest element.</li>
+<li>An instance of <a href="http://www.zvon.org/other/haskell/Outputprelude/Show_c.html"><code>Show</code></a> has a function to convert to a <code>String</code>.</li>
+<li>An instance of <a href="http://www.zvon.org/other/haskell/Outputprelude/Eq_c.html"><code>Eq</code></a> has (at least) an <code>==</code> operator.</li>
+</ul>
+
+<p>(The links above are to the <a href="http://www.zvon.org">Zvon</a> <a href="http://www.zvon.org/other/haskell/Outputglobal/index.html">Haskell reference</a>.)  Haskell supplies these functions by numbering the enumerated elements starting at <code>0</code>.  A quick example with ghci:</p>
+
+<pre class="code">*Main> Ace
+Ace
+*Main> succ Ace
+Two
+*Main> succ it
+Three
+*Main> fromEnum Queen
+11
+*Main> Ace == Two
+False</pre>
+
+<p>(In ghci, <code>it</code> refers to the last result.)</p>
+
+<p>Now, with a little more effort, we can create a <code>Card</code> type that enumerates the deck as tuples of <code>(Suit,Face)</code>, except that we want to supply a custom enumeration, either using dictionary ordering for a normal card or a custom index for the jokers:</p>
+
+<pre class="code">data Card = Cd Suit Face
+          deriving Eq</pre>
+
+<p>As above, this means that Haskell will supply an <code>==</code> for us, and it's important to have, e.g., to use functions like <a href="http://www.zvon.org/other/haskell/Outputlist/elemIndex_f.html"><code>elemIndex</code></a>:</p>
+
+<pre class="code">Eq a => a -> [a] -> Maybe Int</pre>
+
+<p>I'll come to the <code>Maybe</code> monoid below, but the <code>Eq&#160;a =&gt;</code> means that the <code>a</code> in the definition must be an instance of <code>Eq</code>.  Next up are a couple of convenience functions to access the components of a <code>Card</code>:</p>
+
+<pre class="code">suit :: Card -> Suit
+suit (Cd s _) = s
+
+face :: Card -> Face
+face (Cd _ f) = f</pre>
+
+<p>The Solitaire cipher imposes the bridge dictionary ordering on the deck with the A Joker and B Joker coming after the king of spades in the default order.  So, the instance declaration that makes <code>Card</code> into an <code>Enum</code>:</p>
+
+<pre class="code">instance Enum Card where
+    toEnum 53 = (Cd B Joker)
+    toEnum 52 = (Cd A Joker)
+    toEnum n = let  d = n `divMod` 13
+               in Cd (toEnum (fst d)) (toEnum (snd d))
+    fromEnum (Cd B Joker) = 53
+    fromEnum (Cd A Joker) = 52
+    fromEnum c = 13* fromEnum(suit c) + fromEnum(face c)</pre>
+
+<p>Among other things, an instance of <code>Enum</code> makes the <a href="http://www.haskell.org/onlinereport/exps.html#arithmetic-sequences">arithmetic sequence</a> notation <code>..</code> can be used to construct ranges, so the whole deck would be:</p>
+
+<pre class="code">[(Cd Clubs Ace) .. (Cd B Joker)]</pre>
+
+<p>Note that typing this into ghci will result in an error.  The type doesn't implement <code>Show</code>, so Haskell doesn't know how to display the elements of the list.  This is easy enough to fix up:</p>
+
+<pre class="code">show_suit :: Suit -> String
+show_suit s = (take 1) (show s)
+
+show_face :: Face -> String
+show_face f = (take 1) (drop (fromEnum f) "A23456789TJQK$") 
+
+instance Show Card where
+    show c = (show_face (face c)) ++ (show_suit (suit c))</pre>
+
+<p>Now we can get a look at our deck:</p>
+
+<pre class="code">*Main> [(Cd Clubs Ace) .. (Cd B Joker)]
+[AC,2C,3C,4C,5C,6C,7C,8C,9C,TC,JC,QC,KC,
+ AD,2D,3D,4D,5D,6D,7D,8D,9D,TD,JD,QD,KD,
+ AH,2H,3H,4H,5H,6H,7H,8H,9H,TH,JH,QH,KH,
+ AS,2S,3S,4S,5S,6S,7S,8S,9S,TS,JS,QS,KS,
+ $A,$B]</pre>
+
+<p>(The linebreaks are added.)  We're almost done, but the Solitaire cipher assigns different values to the cards than our enumeration does, so we wrap that up in a function:</p>
+
+<pre class="code">value :: Card -> Int
+value (Cd B Joker) = 53
+value c = fromEnum c + 1</pre>
+
+<h4>Step 2: Implement Shuffling</h4>
+
+<p>The Solitaire cipher uses a shuffling algorithm to generate a sequence of letters from the cards in the deck (thus the name for the cipher), and the next step is to implement the shuffling algorithm on top of the <code>Card</code> data type.  There are three fundamental operations:</p>
+
+<ul>
+<li>"Move down" moves a card down in the deck.  The deck is imagined to be circular, so moving a card "down" really involves swapping it with the card immediately below, where the card below the bottom of the deck is the top of the deck.</li>
+<li>"Triple cut" fixes the (inclusive) interval between two cards and swaps the top and bottom portions.</li>
+<li>""Count cut" takes a number of cards off the top of the deck equal to the value of the card on the bottom of the deck and inserts those above the bottom card.</li>
+</ul>
+
+<p>One approach would be to model these three operations as functions:</p>
+
+<pre class="code">m :: Card -> [Card] -> [Card]             -- "move down"
+t_cut :: Card -> Card -> [Card] -> [Card] -- "triple cut"
+c_cut :: [Card] -> [Card]                 -- "count cut"</pre>
+
+<p>With these in hand, the shuffle algorithm is:</p>
+
+<pre class="code">c_cut ( (t_cut ja jb) ( (m jb) ((m jb) ( (m ja) ( deck )))))</pre>
+
+<p>where I'm using <code>ja</code> for <code>(Cd A Joker)</code> and <code>jb</code> for <code>(Cd B Joker)</code>.</p>
+<p>The whole implementation, complete with some inelegant bits for improvement, is <a href="http://mult.ifario.us/files/solitaire.hs">here</a> (or pretty-printed code <a href="http://haskell.org/haskellwiki/Haskell_Quiz/The_Solitaire_Cipher/Solution_Paul">here</a>) and works:</p>
+
+<pre class="code">*Main> encode "Code in Ruby, live longer!"
+"GLNCQMJAFFFVOMBJIYCB"
+*Main> decode it
+"CODEINRUBYLIVELONGER"</pre>
+
+<p>Not all of the code is that pretty (I got a little bored toward the end...), so I'll just include a  snippets here that demonstrate basic list handling and <code>Maybe</code>.</p>
+
+<p><code>Maybe</code> is a convenience that sidesteps the <code>null</code> return type problem in other languages.  For example, here's a function that splits a <code>String</code> into five-character groups with all non-letters removed, all letters capitalized, and the last group padded:</p>
+
+<pre class="code">cleanse :: String -> String
+cleanse c = (map toUpper) ((filter isAlpha) c)
+
+pad :: Int -> Char -> String -> String
+pad n c s | length s &lt; n = s ++ (replicate (n-length s) c)
+pad n c s = s
+
+maybe_split :: String -> Maybe(String,String)
+maybe_split [] = Nothing
+maybe_split s | w == "" = Just (pad 5 'X' s,w)
+              | True = Just (take 5 s, w)
+              where w = drop 5 s
+
+quintets :: String -> [String]
+quintets s = (unfoldr maybe_split) (cleanse s)</pre>
+
+<p>The <code>Nothing</code> value is just that, while <code>Just</code> wraps a real value.  (Note that <code>Nothing</code> is outside of the normal value space of the wrapped type, so unlike <code>null</code>, this makes the semantics of "no return value" explicit.)  The <code>unfoldr</code> function is a way to generate a list by repeatedly applying a function.  It appends the first component of the return value to the list and then applies the function to the second component until the function returns <code>Nothing</code>.  The <code>quintets</code> is almost the pretty-print routine discussed in the quiz and in the cipher:</p>
+
+<pre class="code">*Main> quintets "That was an interesting exercise."
+["THATW","ASANI","NTERE","STING","EXERC","ISEXX"]
+*Main> concat (intersperse " " it)
+"THATW ASANI NTERE STING EXERC ISEXX"</pre>
+
+<p>That said, the pretty-printed version is useless for computing the cipher...</p>
+
+<p>I can think of a few ways to make this more elegant and efficient, and maybe I'll give that a shot later.  In the meantime, hopefully it's an entertaining example.</p>
+
+<hr />
+
+<p><b>Update.</b> There is now a <a href="http://haskell.org/haskellwiki/Haskell_Quiz/The_Solitaire_Cipher">page</a> on the Haskell wiki devoted to solutions.</p>

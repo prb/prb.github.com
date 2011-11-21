@@ -1,0 +1,15 @@
+---
+layout: post
+title: "Java Brain Teaser"
+permalink: java-brain-teaser.html
+categories: [oops, code, java, mistake, brainteaser]
+---
+<p>This one is only of moderate difficulty, but it's still worth a mention (since I stumbled across it today debugging someone else's code).  What could go wrong with the following Java code?</p>
+
+<pre class="code">try {
+  [code]
+} catch (Exception  e) {
+  throw new RuntimeException(e);
+} finally {
+  [code]
+}</pre>

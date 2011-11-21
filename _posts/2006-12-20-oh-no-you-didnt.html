@@ -1,0 +1,28 @@
+---
+layout: post
+title: "Oh no you didn't...?!"
+permalink: oh-no-you-didnt.html
+categories: [ruby, flickr, typo, rexml, sidebar]
+---
+<p>My blog (i.e., this blog) suddenly stopped working today, so I went to the logs to figure out why.  The logs provided:</p>
+
+<pre class="code">ActionView::TemplateError (undefined method `first' for nil:NilClass) on line #9
+  of vendor/plugins/flickr_sidebar/views/content.rhtml:
+[... lots and lots of stuff ...]</pre>
+
+<p>Ah, OK.  I haven't gotten <a href="http://typosphere.org/">Typo</a> current since I decided to <a href="http://mult.ifario.us/articles/2006/10/11/first-steps-with-haskell-for-web-applications">roll</a> <a href="http://mult.ifario.us/articles/2006/10/18/more-haskell-and-personal-publishing-platform-ramblings">my own</a> (which I'm still doing...), so it serves me right if some bug is biting me.  Off to look at the Flickr sidebar, and this chestnut is what's choking things:</p>
+
+<pre class="code">def image
+    description.scan( /(http:\/\/(static|photos).*?\.jpg)/ ).first.first
+end</pre>
+
+<p>Gah!  Using a regular expression to capture a link to an image out of escaped HTML markup passed in the RSS feed...  Not something I would recommend.  Flickr changed their URLs so that the regular expression no longer matched, and the error was caused by <tt>scan</tt> returning <tt>nil</tt>.  It's easy enough to fix by adding some namespaces:</p>
+
+<pre class="code">@@NS = {"media" => "http://search.yahoo.com/mrss/" }</pre>
+
+<p>And then, a couple of tweaks to extract the thumbnail from the appropriate extension element:</p>
+
+<pre class="code">picture.thumbnail = XPath.match(elem, "media:thumbnail/@url",
+  namespaces=@@NS).to_s</pre>
+
+<p>And we're back in business.</p>

@@ -1,0 +1,13 @@
+---
+layout: post
+title: "A Commandline Nano Interface for the Slimserver"
+permalink: a-commandline-nano-interface-for-the-slimserver.html
+categories: [itunes, drm, squeezebox, commandline, hacks, music]
+---
+<p>We've become almost exclusively digital music consumers.  It's easily been six months since we bought our last CD, and a <a href="http://www.slimdevices.com/">Squeezebox</a> has replaced a CD player as the primary means of playing music in some parts of the house.  After some experimentation with <a href="http://softsqueeze.sourceforge.net/">SoftSqueeze</a> as a client for the Slimserver that streams music to the Squezebox, I settled on a combination of the headless <a href="https://sourceforge.net/project/showfiles.php?group_id=105169&amp;package_id=176494">squeezeslave</a> player with some shell scripts that use the web interface to the Slimserver (via <tt>curl</tt>) to play, pause, skip, and shuffle, e.g.:</p>
+
+<pre class="code">#!/bin/sh
+curl -s http://slim.internal:9000/status_header.html\
+\?p0=pause\&amp;player=172.16.1.201 > /dev/null</pre>
+
+<p>So far, so good with <a href="http://mult.ifario.us/articles/2006/03/14/swearing-off-the-itunes-music-store">leaving iTunes</a> behind.  Now I just need to write a <a href="http://quicksilver.blacktree.com/">Quicksilver</a> integration...</p>

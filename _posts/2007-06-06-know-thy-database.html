@@ -1,0 +1,9 @@
+---
+layout: post
+title: "Know Thy Database"
+permalink: know-thy-database.html
+categories: [database, sqlserver, timing]
+---
+<p>I sometimes get to thinking that from the Java side of a layer like <a href="http://www.hibernate.org/">Hibernate</a> or <a href="http://openjpa.apache.org/">OpenJPA</a> a database is just a database, but that's never quite true.  One example is date/time granularity.  The <a href="http://www.contrib.andrew.cmu.edu/~shadow/sql/sql1992.txt">SQL standard</a> specifies that <code>TIME</code> or <code>TIMESTAMP</code> datatypes can support fractional seconds but doesn't require it, and different databases do <a href="http://troels.arvin.dk/db/rdbms/#data_types-date_and_time">different things</a>.  For example, MySQL <a href="http://en.wikibooks.org/wiki/SQL_dialects_reference/Functions_and_expressions/Date_and_time_functions">drops</a> the fractional component of seconds altogether, while SQLServer <a href="http://msdn2.microsoft.com/en-us/library/ms187819(SQL.90).aspx">rounds</a> to the nearest 333<code>rd</code> of a second ("increments of .000, .003, or .007 seconds").</p>
+
+<p>The SQLServer behavior manifested itself as a Heisenbug in a lightweight database-backed caching algorithm.  An update timestamp was maintained by the application in the form of a Java <code>java.util.Date</code>, which has millisecond precision.  The update timestamp was passed to newly created or updated objects and then round-tripped to a SQLServer instance in the course of an update pass, and the cache was throwing out all entries about one-third of the time because rounding of the round-tripped value made the entries look old to a numeric comparison of the <code>long</code> within the <code>java.util.Date</code>.  Adding a second to the object timestamp before comparing solves the issue.</p>

@@ -1,0 +1,29 @@
+---
+layout: post
+title: "It's a Slippery Slope from Merge to Orchestration..."
+permalink: its-a-slippery-slope-from-merge-to-orchestation.html
+categories: [bpel, orchestration]
+---
+<p><a href="http://www.innoq.com/blog/st/">Stefan</a> is <a href="http://www.innoq.com/blog/st/2005/02/28/declarative_process_definitions.html">asking</a> what the big deal is with process languages:</p>
+
+<blockquote><small>Whether it's workflow, orchestration, business process management, or a similar concept under some local name familiar to you, one always seems to end up looking for a flexible, accessible way to define how data flows from one processing node to another.   In an XML-centric world, you'll think about XML documents that get transformed, separated into parts, aggregated again; [...]</small></blockquote>
+
+<blockquote><small>After endless debates, you end up with some open source or commercial solution based on some half-baked standard that you just can't seem to really like. [...]</small></blockquote>
+
+<blockquote><small>Call me a heretic, but I believe that every time somebody tries to sell you some XML-based, pseudo-declarative language it is either a) Turing-complete or b) sucks. And I have not yet seen convincing arguments that this would be different for BPEL.</small></blockquote>
+
+<h3>Messaging Merge as Motivation</h3>
+
+<p>The simple "merge" operation in a messaging environment crops up every time a parallel branch of processing needs to occur asynchronously (e.g., user interaction or batch processing by an external system) -- it is the way that the response rejoins the original "thread" of processing.  It is also one of the first steps toward orchestration.  Writing an efficient merge widget requires reliably dehydrating processing state, correlating inbound messages with dehydrated states, and then managing the consumption of inbound messages and rehydration of suspended processing state intelligently.  (In fact, it was the implementation and re-implementation of different messaging merge scenarios that led to our first orchestration design way back in early 2001.)</p>
+
+<h3>It Seemed Easy Enough at First Glance...</h3>
+
+<p>The three core aspects of the merge are transparent dehydration and rehydration, correlation of messages with instances, and "chunky" concurrency that ties it all together <em>reliably</em> and <em>scalably</em>.  (Concurrency != threads; threads are just an abstraction.)  These three core aspects are the answer to one of Stefan's other questions:</p>
+
+<blockquote><small>Now let's just say you pick the JVM as your engine, and Java as your process definition language &#8212; what exactly do you lose? Not dynamic enough? When was the last time you changed a process already in deployment without serious consideration? Even so, pick Jython, or Groovy &#8212; now what is the difference? How about using some other scripting language?</small></blockquote>
+
+<p>BPEL takes some heat for its syntax, and that isn't undeserved.  The XML-based syntax of BPEL is unfortunate, to be sure, but it's a consequence of the fact that related specifications (WSDL, SOAP, etc.) use XML as a language and that most folks find parsing XML easier than writing a real <a href="http://www.antlr.org/">parser</a> for an old-fashioned language.  I wouldn't necessarily go as far as <a href="http://www.windley.com/">Phil Windley</a> to call it "<a href="http://www.infoworld.com/infoworld/article/04/07/02/27TCwsibpel_1.html">syntactic arsenic</a>", and I've written a good amount of BPEL by hand.  (Emacs <a href="http://mult.ifario.us/articles/2004/10/09/emacs-as-a-ws-bpel-editor">works</a> <a href="http://mult.ifario.us/articles/2004/10/10/emacs-as-a-ws-bpel-editor-part-ii">fine</a> for me and is more likely to produce correct BPEL than any of the GUI editors I've tried.)</p>
+
+<p>BPEL exists because Java, Python, Jython, and Ruby -- as well as more interesting and exotic stuff like <a href="http://joinjava.unisa.edu.au/">Join Java</a> and <a href="http://www.ncc.up.pt/tyco/">TyCO</a> -- simply don't support those three core aspects of the merge scenario, and doing a good implementation from scratch is complex.</p>
+
+<p>In its domain, BPEL is a powerful tool, and as with many things, if it hurts, you're doing it wrong...  The correct strategy for working with an orchestration engine, at least if you ask me, is to treat it as a component that factors specific functional aspects out of the system or product being implemented.  An orchestration engine belongs at the <em>bottom</em> of the architecture as a supporting component, not at the <em>top</em> as an <a href="http://blogs.fivesight.com/pbblog/index.php?p=21">application language</a> or a design.  Those functional aspects that remain after factoring out orchestration, e.g., fine-grained XML handling, should be encapsulated and attacked with the best tool for the respective job, and that typically is not BPEL or another orchestration language.</p>

@@ -1,0 +1,138 @@
+---
+layout: post
+title: "How to Integrate an External Spam Filter with Mail.app"
+permalink: how-to-integrate-an-external-spam-filter-with-mail-app.html
+categories: [spam, mail, bogofilter, macosx, qpopper, procmail, applescript]
+---
+<p>This entry outlines how to integrate <a href="http://www.procmail.org/">procmail</a> and <a href="http://bogofilter.sf.net/">bogofilter</a> with <a href="http://www.apple.com/macosx/features/mail/">Mail.app</a>.</p>
+
+<p>For motivation, the <a href="http://yro.slashdot.org/article.pl?sid=04/01/14/0037231&amp;mode=thread&amp;tid=111&amp;tid=126&amp;tid=95">recent rash</a> of word-spew spam rendered the junk filter in Mail.app ineffective (for me). With no way to upgrade the filter functionality built into Mail.app, I decided to get an external, upgradeable, extensible filter working. Once all was said and done, I had procmail and bogofilter working and word list management <a href="http://www.apple.com/applescript/developers/">AppleScript</a>s integrated into Mail.app:</p>
+
+<p align="center"><img src="http://mult.ifario.us/files/spamscripts.png" /></p>
+
+<h4>Mail Processing Pipeline Construction and Configuration</h4>
+
+<p>Mail.app has a lot going for it, like great search capabilities, a multi-threaded front-end, and integration with <a href="http://www.apple.com/macosx/features/addressbook/">AddressBook</a>, among other things. However, there are a couple of gotchas for using Mail.app with standard <a href="http://en2.wikipedia.org/wiki/Mail_delivery_agent">MDA</a>s like procmail that expect to operate on streams and spool files:</p>
+
+<ul>
+<li>Mail.app, as far as I can tell, can only pull mail from a POP3, IMAP, or Exchange server. (It may be possible to simply use one of the mbox files inside Mail.app's folder hierarchy as a spool, but without documentation about file locking and caching behavior, I'm not going to touch it.)</li>
+
+<li>Mail.app's rule processing is side-effect-free, so any in-client message processing would have to be done in one or more independent AppleScript scripts that did not alter the message. (This would require, for example, that each AppleScript move the message, which is <a href="http://www-2.cs.cmu.edu/~benhdj/Mac/junkMatcherFAQ.html#mailMov">undesirable</a>.)</li>
+</ul>
+
+<p>To get around the issues, I settled on a mail processing pipeline that still presents a POP3 interface to Mail.app:</p>
+
+<p align="center"><img href="http://mult.ifario.us/files/POPStack.png" /></p>
+
+<p>Mac OS X 10.3 comes with procmail and <a href="http://www.catb.org/~esr/fetchmail/">fetchmail</a>, so that much is easy. For the local POP3 server, <a href="http://www.eudora.com/qpopper/%20is%20available%20from%20%7Blink:darwinports">qpopper</a>), and the setup <a href="http://www.kung-foo.tv/blog/archives/000654.php">instructions</a> in Adriaan Tijsseling's <a href="http://www.kung-foo.tv/blog">blog</a> are straightforward.</p>
+
+<p>With <a href="http://www.sleepycat.com/products/data.shtml">BerkeleyDB</a> built and installed from scratch (the version from <a href="http://darwinports.opendarwin.org/">darwinports</a> puts files in strange locations that are incompatible with the bogofilter build), a fresh download of bogofilter 0.16.1 compiles cleanly with:</p>
+
+<pre class="code">./configure --with-libdb-prefix=/usr/local/BerkeleyDB.4.2</pre>
+
+<p>(I do have the BerkeleyDB lib and include directories declared in the <tt>CPATH</tt> and <tt>C_INCLUDE_PATH</tt> environment variables.)</p>
+
+<p>To get bogofilter to insert an <tt>X-Bogosity</tt> header into each mail, the <tt>.procmailrc</tt> that I'm using is:</p>
+
+<pre class="code">MAILDIR=/Users/prb
+
+:0fw | bogofilter -u -e -p
+
+:0: Mailbox</pre>
+
+<p>The <tt>.fetchmailrc</tt> (with the host, login, and password changed...) is:</p>
+
+<pre class="code">set daemon 120
+
+defaults no rewrite
+
+poll mailhost.com with protocol POP3:
+  user login password secret
+  mda "procmail -d %T"
+  ssl, no keep, no forcecr</pre>
+
+<h4>Integration with Mail.app</h4>
+
+<p>With the mail processing pipeline working, I shut off Mail.app's junk mail processing and added a rule to trigger on messages that bogofilter marks as spam:</p>
+
+<p align="center"><img src="http://mult.ifario.us/files/bogorule.png" /></p>
+
+<p>The more difficult piece of integration is a way to manage the bogofilter word list from within Mail.app. Because I'm using the -u option that automatically adds to the counts in the word list, I need to rerun bogofilter with either -Ns (decrement the ham counts, incremenet the spam counts) or -Sn (decrement the spam counts, increment the ham counts), as appropriate, to reclassify a message.</p>
+
+<p>Here is script that writes the content of a selected message or messages out to a file and then runs the appropriate shell commands:</p>
+
+<pre class="code">using terms from application "Mail"
+  on perform mail action with messages msgs
+    if (count of msgs) is not equal to 0 then
+      repeat with msg in msgs
+        set t to path to temporary items
+        set posixT to POSIX path of t
+        set nam to (t as string) &amp; "bogotemp"
+        set Pnam to (posixT as string) &amp; "bogotemp"
+        do shell script "rm -f " &amp; Pnam
+        set f to open for access file nam with write permission
+        write ((source of msg) as string) to f
+        close access f
+        do shell script "/usr/local/bin/bogofilter -Ns &lt; " &amp; Pnam
+        do shell script "rm -f " &amp; Pnam
+      end repeat
+    end if
+  end perform mail action with messages
+end using terms from</pre>
+
+<p>This is the equivalent of the much more compact</p>
+
+<pre class="code">bogofilter -Ns &lt; msg</pre>
+
+<p>on the commandline. It is also possible to get message statistics from bogofilter in Mail.app. For example, this script populates a new message with the words and statistics from a selected message using the same temporary file trick:</p>
+
+<pre class="code">using terms from application "Mail"
+  on perform mail action with messages msgs
+    set bogodirectory to "/usr/local/bin/"
+    set bogodb to "/Users/prb/.bogofilter/wordlist.db"
+    if (count of msgs) is not equal to 0 then
+      repeat with msg in msgs
+        set t to path to temporary items
+        set posixT to POSIX path of t
+        set nam to (t as string) &amp; "bogotemp"
+        set Pnam to (posixT as string) &amp; "bogotemp"
+        do shell script "rm -f " &amp; Pnam
+        set f to open for access file nam with write permission
+        write ((source of msg) as string) to f
+        close access f
+        set spamicity to bogodirectory &amp; "bogofilter -e -t  &lt; " &amp; Pnam
+        set score to "spamicity: " &amp; (do shell script spamicity)
+        set summary to bogodirectory &amp; "bogolexer -p -I " &amp; Pnam
+        set summary to summary &amp; " | " &amp; bogodirectory
+        set summary to summary &amp; "bogoutil -v -p " &amp; bogodb
+        set summary to summary &amp; " | sort | uniq | sort +3 -r"
+        set lst to paragraphs of (do shell script summary)
+        set text item delimiters to return
+        set wordList to score &amp; return &amp; return
+        set wordList to wordList &amp; (end of lst &amp; return &amp; rest of lst)
+        tell application "Mail" &not;
+               to make new outgoing message &not;
+               with properties {subject:score, &not;
+               content:wordList, visible:true}
+        do shell script "rm -f " &amp; Pnam
+      end repeat
+    end if
+  end perform mail action with messages
+end using terms from</pre>
+
+<p>If you're lazy or want something to use as a starting point, <a href="http://mult.ifario.us/files/bogoscripts.tar.bz2">here</a> are the scripts I'm using. To install, unpack in ~/Library/Scripts/Mail\ Scripts.</p>
+
+<p>I'm a relative newbie to AppleScript and the internals of inter-application communication on Mac OS X, so exploring the different ways to integrate procmail and bogofilter with Mail.app was educational. At the very high end, it is <a href="http://www.tikouka.net/mailapp/">apparently possible</a> to build native plug-in bundles for Mail.app. (I couldn't even get started because <a href="http://www.apple.com/macosx/features/xcode/">XCode</a> kept crashing on me...) Example source code (<a href="http://sourceforge.net/projects/dirtoy/">here</a> and <a href="http://www.sente.ch/software/GPGMail/English.lproj/GPGMail.html">here</a>) is available, but I wasn't able to locate any official documentation. I also explored the possibilities with the specific capabilities of <a href="http://homepages.cwi.nl/~jack/macpython/index.html">MacPython</a> and <a href="http://pudge.net/macperl/Mac-Glue.html">Mac::Glue</a>.</p>
+
+<h4>Notes</h4>
+<p>Thanks to <a href="http://lucas.bergmans.us/">Lucas Bergman</a>, FiveSight's guru of all things mail, for helping with the rc files and various mucking around.</p>
+
+<p>Actually writing AppleScript is awful, and the unpalatable syntax is compounded by the lack of any useful debugging other than popping-up dialogs through the course of a script. I tried to avoid it, but it appears to have been the shortest path. (If you must, it looks like <a href="http://www.amazon.com/gp/product/0596005571/">AppleScript: The Definitive Guide</a> is a good source of information and examples.)</p>
+
+<p>An incomplete list of alternatives to the do-it-yourself approach with procmail:</p>
+
+<ul>
+<li><a href="http://www.cs.cmu.edu/~benhdj">Ben Han</a> has a nice (free) package <a href="http://www-2.cs.cmu.edu/~benhdj/Mac/junkMatcher.html">JunkMatcher</a> that can perform regular expression-based filtering along with a bunch of other tests. His approach uses a callback to the <a href="http://www.apple.com/applescript/mail/">scripting interface</a> of Mail.app from a Python application to do the work.</li>
+
+<li><a href="http://www.c-command.com/spamsieve/">SpamSieve</a> looks like a great deal at $25 (It took more than $25 worth of my time to get this all working...). Nonetheless, it doesn't provide for arbitrary extensibility, and in its current incarnation, it can only mark but not move marked messages from a POP3 account. (This is, as the SpamSieve FAQ points out, Mail.app's fault, not SpamSieve's.)</li>
+</ul>

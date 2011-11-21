@@ -1,0 +1,14 @@
+---
+layout: post
+title: "Sorry, Virginia, There is No <tt>tools.jar</tt>"
+permalink: sorry-virginia-there-is-no-tt-tools-jar-tt.html
+---
+<p>To go with all of the great things about using Mac OS X, there is the cruel myth of <code>tools.jar</code>.  In spite of the fact that it says absolutely nothing about archive names, paths, or anything remotely like that in the <a href="http://java.sun.com/docs/books/vmspec/2nd-edition/html/VMSpecTOC.doc.html">JVM Specification</a>, even otherwise well-informed developers insist on believing that there is a magic <code>tools.jar</code> that lives in some subdirectory of <code>JAVA_HOME</code>.  It just so happens that a <code>tools.jar</code> exists in a number of JVM implementations from a number of companies, but its presence or location are absolutely <em>not</em> things to be relied upon.</p>
+
+<p>The fact is that it's relatively easy to avoid a dependency on <code>tools.jar</code> by simply checking the environment for the shell-based launcher, Ant build, or application and <em>not</em> including it on the classpath when on Mac OS X.  Many but not necessarily all of the useful goodies in <code>tools.jar</code> on some platforms are in the main archive on Mac OS X, which happens to be located in <code>$JAVA_HOME/../Classes/classes.jar</code>:</p>
+
+<blockquote><pre>$ jar tvf $JAVA_HOME/../Classes/classes.jar | grep javac
+  1385 Wed Sep 01 09:02:38 CDT 2004 com/sun/tools/javac/Main.class
+  1595 Wed Sep 01 09:02:38 CDT 2004 com/sun/tools/javac/v8/CommandLine.class
+ 14627 Wed Sep 01 09:02:38 CDT 2004 com/sun/tools/javac/v8/JavaCompiler.class
+<em>[... etc ...]</em></pre></blockquote>

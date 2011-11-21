@@ -1,0 +1,21 @@
+---
+layout: post
+title: "Feedburnerizing Typo, Part II"
+permalink: feedburnerizing-typo-part-ii.html
+categories: [feedburner, typo, rss, atom, sidebar, ruby, http, redirect, autodiscovery, feed]
+---
+<p>Last year, I wrote a rudimentary <a href="http://mult.ifario.us/articles/2005/12/29/feedburner-izing-typo-in-fifteen-minutes">sidebar</a> to display Feedburner feed links in <a href="http://www.typosphere.org">Typo</a>, but I didn't really get it to the point I wanted at the time.  So, I took another fifteen minutes to rewrite the sidebar to work with the <a href="http://www.bofh.org.uk/articles/2006/04/16/write-your-own-typo-sidebar">enhanced API</a>, ditch the auto-subscribe chiclets, add links for category feeds, and muck with <code>routes.rb</code>.  In <code>routes.rb</code>, I mapped a new set of feed URLs for Feedburner onto the controller that currently serves feeds, switched the existing mappings to a two-line controller that <code>301</code>'s to the Feedburner equivalents, and left holes so that people can subscribe directly to article-specific or tag-specific feeds if they wish.  (The bonus in this approach is that autodiscovery gets taken care of for free, because the autodiscovery feed is one that gets <code>301</code>'d.)</p>
+
+<p>Just for grins, here's the two-line controller implementation:</p>
+
+<pre class="code">class FbController &lt; ContentController
+  def redirect   
+    headers["Status"] = "301 Moved Permanently"
+    redirect_to "http://feeds.feedburner.com/Multifarious" +
+      params[:type].to_s.capitalize + params[:id].to_s.capitalize
+  end
+end</pre> 
+
+<p>Sometimes I think that the cornucopia of methods on some of the Ruby core classes (like <a href="http://www.rubycentral.com/book/ref_c_string.html#String.capitalize">capitalize</a> on <a href="http://www.rubycentral.com/book/ref_c_string.html">String</a>) is overkill, and sometimes, it's convenient.</p>
+
+<p>I hope that the enhanced setup is useful to any readers (since Feedburner should ensure QoS), but mostly I hope that it's transparent.  (FWIW, NetNewsWire did the Right Thing and changed the feed URL for my self-subscription to the new one in response to the <code>301</code>.)  If for some reason you can't see this, let me know...</p>

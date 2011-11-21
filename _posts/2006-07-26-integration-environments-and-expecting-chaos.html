@@ -1,0 +1,19 @@
+---
+layout: post
+title: "Integration Environments and Expecting Chaos"
+permalink: integration-environments-and-expecting-chaos.html
+categories: [testing, qa, integrationtesting, softwareprocess, goodsoftware, goodenough]
+---
+<p>An integration environment for a complex system is challenging to maintain, and even a relatively small number of active development teams (e.g., two) can generate a good number of concurrent updates to the target system.  Here are some thoughts about how to stop worrying and love a little chaos.</p>
+
+<p>My perspective on software testing is that it is intended to verify a set of assertions about a piece of software in a given environment.  Engineering process ensures that the artifacts placed in a given environment have a tight relationship with the source code and configuration for the software, and this is an absolute.  It is tempting to strive for a similar level of control over the environments for different stages of testing, but this sort of perfection can actually be the enemy of building good software.  (&#8220;Good software&#8221; is software that does the work it is supposed to do, ideally making money for a business.)</p>
+
+<p>For the sake of argument, suppose that the system under development, SystemX, has a dependency on SystemY.  If SystemY is down or degraded in the integration environment, two things should happen.  First, SystemX should quickly detect the issue and exhibit an expected, graceful degradation of functionality because that's what it's <em>supposed to do</em> in production under the same circumstances.  Second, SystemX should be notifying the SystemY team that the system is degraded.  Ideally this is an automated thing, but at a bare minimum it is the lead for SystemX getting in synchronous communication with the lead for SystemY and finding out what's up.  Third, the SystemX team needs to sit down and exercise some judgement about how SystemX would behave if SystemY were operating normally.  That judgement can be based <em>solely</em> on the knowledge of how SystemX has changed with respect to the last integration release where SystemY was operating normally, but careful and detailed management of changes is critically important.  (What revision was known to be working correctly with SystemY?  What changes have been made since then?)  Note that <em>none</em> of this requires any action on the part of the SystemY team.  (It's neither the business nor the responsibility of the SystemX team how SystemY operates and vice versa.)</p>
+
+<p>As bullets:</p>
+
+<ul>
+<li>Test what you can test.</li>
+<li>Own your outcomes.</li>
+<li>Ensure that your own house is in order and reason from what you know.</li>
+</ul>

@@ -1,0 +1,14 @@
+---
+layout: post
+title: "Redux on SAX <code>NamespaceSupport</code> &mdash; It's not for handlers."
+permalink: redux-on-sax-code-namespacesupport-code-its-not-for-handlers.html
+---
+<p>In an earlier <a href="http://mult.ifario.us/articles/2004/10/15/sax-namespacesupport-and-order-of-operations">entry</a>, I commented on an <code>IllegalStateException</code> that can occur when the SAX <code>NamespaceSupport</code> helper class is used incorrectly.  (A common scenario for this exception to occur is a newer set of SAX APIs and an older parser, e.g., Crimson, but any code that used <code>NamespaceSupport</code> to track namespaces is susceptible.)  I also offered some suggestions about proper usage of <code>NamespaceSupport</code> for writing SAX handlers, but those suggestions were incorrect for the current version of <code>NamespaceSupport</code>.</p>
+
+<p>As the Javadocs for the <a title="Source code for NamespaceSupport." href="http://cvs.sourceforge.net/viewcvs.py/sax/sax2/src/org/xml/sax/helpers/NamespaceSupport.java?rev=1.15&amp;view=markup">current version</a> of the class state, it is intended for use by <em>parsers</em> as a convenience between when the start of an element is detected while scanning the input and when the <code>startElement</code> event is generated.  Put another way, the lifecycle of a stack frame in <code>NamespaceSupport</code> is the lifetime of a <code>startElement</code> event in the parser, while the desired lifecycle of a set of namespace declarations for the purposes of a <em>handler</em> spans from the start element that declares the namespaces (and inherits their predecessors) to the end element that moves them out of scope.</p>
+
+<p>Thus, the better practice is:</p>
+
+<blockquote><p>Do not use <code>NamespaceSupport</code> to track namespace bindings in a SAX handler implementation.</p></blockquote>
+
+<p>Instead, you'll have to use something like <a href="http://mult.ifario.us/files/NamespaceStack.java" title="NamespaceStack.java">this</a>.</p>

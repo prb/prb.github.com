@@ -1,0 +1,11 @@
+---
+layout: post
+title: "A Little Life Support for Typo"
+permalink: a-little-life-support-for-typo.html
+categories: [typo, memcached, rails, session]
+---
+<p>I've been busy, but I haven't been so busy that I couldn't find a little time to blog.  I have been busy enough that I couldn't find time to diagnose why Typo would give me an HTTP 500 after a very long pause whenever I tried to post.  I finally found the time, and a little poking around was enough to suggest that 250k rows in the <tt>sessions</tt> table was a bit much for the way I have MySQL configured.</p>
+
+<p>The bloated <tt>sessions</tt> table was the result of the default configuration that uses the database to manage sessions.  Truncating the table plus a switch over to memcached for session management (as per <a href="http://errtheblog.com/post/24">Err</a>) have me back to a usable configuration.</p>
+
+

@@ -1,0 +1,41 @@
+---
+layout: post
+title: "Darcs Repository for Perpubplat"
+permalink: darcs-repository-for-perpubplat.html
+categories: [perpubplat, darcs, haskell, cabal]
+---
+
+<p>I succumbed to some mild <a
+href="http://programming.reddit.com/info/64fo8/comments">peer
+pressure</a>, posted a <a href="http://darcs.net">Darcs</a>
+repository, cleaned-up the <a
+href="http://www.haskell.org/cabal/">Cabal</a> files for perpubplat,
+and fixed a few minor bugs.  If you have darcs installed, you can pull
+down a copy of the source code &#8212; a grand total of less than 1500
+lines according to <a
+href="http://www.dwheeler.com/sloccount/">SLOCCount</a> &#8212;
+with:</p>
+
+<pre class="code">darcs get http://datapr0n.com/repos/perpubplat</pre>
+
+<p>You can also browse the repository at the same URL, but Apache will
+serve those files to you as <code>text/x-haskell</code>, i.e., your
+browser probably won't display them as plain text in the browser.  The
+Darcs-maintained revision history is <a
+href="http://datapr0n.com/darcs/perpubplat/?c=patches">here</a>.</p>
+
+<p>The <a
+href="http://datapr0n.com/repos/perpubplat/README">README</a> file
+contains instructions on building, but if you've already got GHC 6.8.2
+and FastCGI libraries installed, it's as easy as:</p>
+
+<pre class="code">$ cd perpubplat
+$ cd perpubplat
+$ chmod +x Setup.lhs
+$ ./Setup.lhs configure &amp;&amp; ./Setup.lhs build &amp;&amp; sudo ./Setup.lhs install
+$ cd ../perpubplat_servlet
+$ ./Setup.lhs configure &amp;&amp; ./Setup.lhs build</pre>
+
+<p>The FastCGI handler is
+<code>dist/build/perpubplat.fcgi/perpubplat.fcgi</code>.</p>
+

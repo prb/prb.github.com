@@ -1,0 +1,18 @@
+---
+layout: post
+title: "XML DOM Considered Harmful"
+permalink: xml-dom-considered-harmful.html
+---
+<p>I'm no fan of the DOM, and I'm not alone -- probably anyone else who's used it extensively feels the same way.  (If you must know, it's the b0rked namespace support that gets on my nerves the most.)  I wasn't on the committee that designed the original DOM and its successors, but I'll throw some stones anyway: the current state of affairs is the result of short-sightedly valuing compatibility over correctness.  It is possible to make mistakes, and those mistakes should be acknowledged, corrected, and then avoided.</p>
+
+<p>While I'm DOM-bashing, here's a quote from <a href="http://www.cafeconleche.org">Elliotte Rusty Harold</a> in an <a href="http://www.artima.com/intv/dom.html">interview</a> with Bill Venners:</p>
+
+<blockquote><small>There's a phrase, "A camel is a horse designed by committee." That's a slur on a camel. A camel is actually very well adapted to its environment. DOM, on the other hand, is the sort of thing that that phrase was meant to describe.</small></blockquote>
+
+<p>And some <a href="http://lists.xml.org/archives/xml-dev/200502/msg00426.html">comments</a> from <a href="http://www.saxonica.com">Michel Kay</a> from a discussion of the TrAX interfaces on the <a href="http://www.xml.org/xml/xmldev.shtml">xml-dev</a> list:</p>
+
+<blockquote><small>Sadly Java seems to have got itself into the hole that interfaces cannot evolve - or at least if they do, it causes serious disruption. I've had to
+do major reengineering of Saxon to keep it working across JDK 1.4/1.5
+because of changes to the DOM interfaces. (Though if this hastens the death of the bloated monster called DOM, I won't be sorry.)</small></blockquote>
+
+<p>Amen.</p>

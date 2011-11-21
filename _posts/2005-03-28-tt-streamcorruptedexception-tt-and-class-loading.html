@@ -1,0 +1,40 @@
+---
+layout: post
+title: "StreamCorruptedException and Class Loading"
+permalink: tt-streamcorruptedexception-tt-and-class-loading.html
+---
+<p>Here's an otherwise innocuous utility method:</p>
+
+<pre><small>public static Object toObject(byte[] bytes) throws IOException,
+    ClassNotFoundException
+{
+  ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+  ObjectInputStream ois = new ObjectInputStream(bis);
+  return ois.readObject();
+}</small></pre>
+
+<p>Why would something that works in a unit testing environment fail with a <tt>StreamCorruptedException</tt> in a more complex container?  (<strong>HINT:</strong> Class loading is almost <em>always</em> the culprit...)  As the <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/io/ObjectInputStream.html#readObject()">javadoc</a> for <tt>toObject()</tt> says, a <tt>StreamCorruptedException</tt> can result if the stream violates internal consistency checks, but what does this have to do with class loading?</p>
+
+<p>Well... if you trace through the source, which is no mean feat, you'll see that <tt>ObjectInputStream</tt> uses the most recent non-<tt>null</tt> <tt>ClassLoader</tt> from the call stack, i.e., the <tt>ClassLoader</tt> that loaded the class with the utility method, when trying to locate classes by name.  The <tt>StreamCorruptedException</tt> will show up if you use non-default serialization for a class and that class is not visible to the <tt>ClassLoader</tt> that loaded the class with the utility method!</p>
+
+<p>Thus, if you must, a better form for the method would be:</p>
+
+<pre><small>public static Object toObject(byte[] bytes, ClassLoader cl)
+    throws IOException, ClassNotFoundException
+{
+  ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+  ObjectInputStream ois = new ObjectInputStream(bis) {
+    protected Class&lt;?&gt; resolveClass(ObjectStreamClass desc) throws IOException,
+      ClassNotFoundException
+    {
+      String name = desc.getName();
+      Class c = cl.loadClass(name);
+      return c;
+    }
+  };
+  return ois.readObject();
+}</small></pre>
+
+<p>This can have security implications (some folks don't want you to subclass on <tt>ObjectInputStream</tt> for obvious reasons), but it will work right under most circumstances, unlike the original.  For what it's worth, it's probably better to not use a utility method and locate this operation with the caller and avoid the issue in the first place.</p>
+
+<p>You just never know when <tt>Class.forName()</tt> is going to jump out and bite you...</p>

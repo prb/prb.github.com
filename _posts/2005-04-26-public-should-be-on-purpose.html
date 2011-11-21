@@ -1,0 +1,8 @@
+---
+layout: post
+title: "Public Should be on Purpose"
+permalink: public-should-be-on-purpose.html
+---
+<p>Depending on how you look at things, integrated development environments (IDEs) are evil because they make it possible to write software without knowing what you're doing.  With the IDE's help, it's very easy to auto-import and control-spacebar yourself into a pickle, all without reading documentation, looking at source code, or otherwise paying your dues for reusing code.</p>
+
+<p>Changing your IDE to create classes that are either <tt>private</tt> or at least package-private by default (as opposed to <tt>public</tt>) is a good ten-second hit of preventative medicine for ensuring that visibility helps to enforce architectural constraints.  In fact, package-private is what you get by default in Java unless you type <tt>public</tt> or <tt>private</tt> on purpose (i.e., for some <em>reason</em>), but most IDEs ship with configurations that make decisions for you.</p>

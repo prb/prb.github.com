@@ -1,0 +1,8 @@
+---
+layout: post
+title: "Simple CVS Sandboxing with <tt>rsync</tt>"
+permalink: simple-cvs-sandboxing-with-tt-rsync-tt.html
+---
+<p><a href="http://www.fivesight.com/pxe.shtml">PXE</a> is composed of 30-ish (I run out of fingers and toes somewhere around 20...) modules that are all part of a central build.  I typically work on one module at a time, but sometimes I don't want to commit all of my changes at once.  Nonetheless, policy dictates that the mainline builds at all times, so I <em>should</em> rebuild and test with each major block of changes that I commit.</p>
+
+<p>So, I check out a clean tree somewhere, use <tt>rsync -C</tt> to copy over the modules I've changed, then build and run smoke tests.  The <tt>-C</tt> flag ignores files that would normally be ignored by CVS, so it's equivalent to having made my changes to the clean build.</p>

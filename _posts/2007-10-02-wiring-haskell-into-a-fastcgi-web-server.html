@@ -1,0 +1,346 @@
+---
+layout: post
+title: "Wiring Haskell into a FastCGI Web Server"
+permalink: wiring-haskell-into-a-fastcgi-web-server.html
+categories: [lighttpd, apache, mod_fastcgi, mod_fcgid, haskell, fastcgi, blog]
+---
+<p>Herein part six in my hobby project to rewrite my personal
+publishing software in Haskell.  In <a
+href="http://mult.ifario.us/articles/2007/03/04/stm-and-io">part
+five</a> (and its <a
+href="http://mult.ifario.us/articles/2007/03/13/stm-and-io-redux">addendum</a>),
+I roughed-out a persistence and concurrency model for the back-end.
+The next two pieces are rendering content (which will be done
+programmatically using the <a
+href="http://hackage.haskell.org/packages/archive/xhtml/3000.0.1/doc/html/Text-XHtml-Strict.html"><code>Text.XHtml.Strict</code></a>
+module; that's a separate post) and integrating with a web server via
+<a href="http://www.fastcgi.com/">FastCGI</a>.  This post covers
+FastCGI integration for <a
+href="http://www.lighttpd.net/">Lighttpd</a> and <a
+href="http://httpd.apache.org/">Apache2</a> in the form of
+smoke-testing a simple FastCGI handler.</p>
+
+<h3>Units of Concurrency</h3>
+
+<p>For the concurrency model that I plan to use in the actual
+application, a single OS process is critically important, as multiple
+processes wouldn't be aware of who was doing what within the other
+processes.  Multiple active threads within that one process are fine.
+Most web-based systems use a single process as a concurrency pinch
+point, but that process is usually the database as opposed to the web
+application.</p>
+
+<p>Haskell in the form of GHC provides two flavors of <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent.html">concurrency</a>,
+which I'll refer to as <code>forkIO</code> and <code>forkOS</code>
+(after the functions <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent.html#v%3AforkIO"><code>forkIO</code></a>
+and <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent.html#v%3AforkOS"><code>forkOS</code></a>,
+respectively).  The <code>forkIO</code> flavor uses Haskell's
+internally managed, lightweight threads, and the <code>forkOS</code>
+flavor uses threads from the underlying operating system.  (For some
+perspective on what an OS thread really means, take a look at my <a
+href="http://mult.ifario.us/articles/2006/05/11/more-on-erlang-performance-and-threading">post</a>
+on SMP Erlang on Mac OS.)  The FastCGI binding library provides a
+mechanism to use <code>forkIO</code>, <code>forkOS</code>, or some
+other mechanism to assign a worker thread to a request, and I want to
+compare the two fork flavors for performance and stability.</p>
+
+<p>It's worth reading the fine print in the <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent.html"><code>Control.Concurrent</code></a>
+documentation.  For the present application, every thread does make
+foreign calls as part of handling a FastCGI request and every request
+is likely to complete in less than Haskell scheduler's default
+granularity of 20ms.  I'm less interested in performance and more
+interested in looking for leaks, deadlocks, or other bad behavior.</p>
+
+<h3>Building the Right <code>Network.FastCGI</code></h3>
+
+<p>Both the <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/fastcgi-1.0">1.0</a>
+and <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/fastcgi-3000.0.0">3000.0.0</a>
+versions of the <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/fastcgi"><code>Network.FastCGI</code></a>
+appear in the <a
+href="http://hackage.haskell.org/packages/hackage.html">Hackage</a>
+directory, but the darcs <a
+href="http://darcs.haskell.org/fastcgi/">head</a> version (3001.0.0 as
+of this posting) is the one with the multi-threaded bindings exposed.
+(For the uninitiated, <a href="http://darcs.net/">darcs</a> is a
+distributed source code management system implemented in Haskell.  The
+darcs codebase is in literate Haskell, so it's an interesting read for
+that if nothing else.)  Darcs is available from the usual package
+managers; I use <a href="http://www.macports.org/">MacPorts</a> on the
+Mac.</p>
+
+<p>Get the latest <code>Network.FastCGI</code> from the darcs repository:</p>
+
+<pre class="code">darcs get http://darcs.haskell.org/fastcgi/</pre>
+
+<p>The <code>fastcgi.cabal</code> file documents the dependencies, but a GHC 6.6.1 install is sufficient.  Then build and install it the usual <a href="http://www.haskell.org/cabal/">Cabal</a> <a href="http://haskell.org/haskellwiki/Cabal/How_to_install_a_Cabal_package">way</a>:</p>
+
+<pre class="code">cd fastcgi
+runghc Setup.hs configure
+runghc Setup.hs build
+sudo runghc Setup.hs install</pre>
+
+<p>One more step is needed to register the package with the compiler:</p>
+
+<div class="typocode"><pre><code class="typocode_default ">sudo runghc Setup.hs register</code></pre></div>
+
+<p>And then to make sure that it worked:</p>
+
+<pre class="code">$ ghc-pkg list 
+/opt/local/lib/ghc-6.6.1/package.conf:
+    Cabal-1.1.6.2, GLUT-2.1.1, HGL-3.1.1, HUnit-1.1.1, OpenGL-2.2.1,
+    QuickCheck-1.0.1, X11-1.2.1, base-2.1.1, cgi-3001.1.1,
+    fastcgi-3000.0.0, fastcgi-3001.0.0, fgl-5.4.1, filepath-1.0,
+    (ghc-6.6.1), haskell-src-1.0.1, haskell98-1.0, html-1.0.1,
+    mtl-1.0.1, network-2.0.1, parsec-2.0, readline-1.0,
+    regex-base-0.72, regex-compat-0.71, regex-posix-0.71, rts-1.0,
+    stm-2.0, template-haskell-2.1, time-1.1.1, unix-2.1, xhtml-3000.0.2</pre>
+
+<p>It takes a bit more doing to get it going with the GHC tip (to-be
+6.8) because the <code>Data.ByteString</code> modules have been
+promoted into core GHC packages and rearranged a bit, but no
+meaningful code changes beyond some of the import statements and the
+<code>fastcgi.cabal</code> file are required.  (I've sent a <a
+href="http://mult.ifario.us/files/fastcgi.diff">patch</a> to the
+maintainer.)</p>
+
+<h3>A Simple FastCGI Handler for Process/Thread Information</h3>
+
+<p>The following short Haskell program (<a
+href="http://mult.ifario.us/files/test_IO.hs">test_IO.hs</a>) sends
+back a plain text response with process and thread information:</p>
+
+<pre class="code">import Control.Concurrent
+import System.Posix.Process (getProcessID)
+
+import Network.FastCGI
+
+test :: CGI CGIResult
+test = do setHeader "Content-type" "text/plain"
+          pid &lt;- liftIO getProcessID
+          threadId &lt;- liftIO myThreadId
+          let tid = concat $ drop 1 $ words $ show threadId
+          output $ unlines [ "Process ID: " ++ show pid,
+                             "Thread ID:  " ++ tid]
+
+main = runFastCGIConcurrent' forkIO 10 test</pre>
+
+<p>(This is an adaptation of the <a
+href="http://darcs.haskell.org/fastcgi/examples/printinput.hs"><code>printinput.hs</code></a>
+example that uses the multi-threaded API.)  To build it:</p>
+
+<pre class="code">$ ghc -threaded -package fastcgi --make -o test_IO.fcgi test_IO.hs
+[1 of 1] Compiling Main             ( test_IO.hs, test_IO.o )
+Linking test_IO.fcgi ...</pre>
+
+<p>The equivalent program (<a
+href="http://mult.ifario.us/files/test_OS.hs">test_OS.hs</a>) with
+<code>forkOS</code> in place of <code>forkIO</code> does the job for
+OS threads.</p>
+
+<p>I can use these two FastCGI handlers with different possible
+compiler version, web server, and FastCGI module combinations and see
+how things do under some simulated loads.  The only gotcha with this
+approach is that some HTTP benchmarking tools use response byte counts
+as an assertion of a correct response, and they will complain as the
+thread ID goes from one digit to two to three, etc.  My current
+favorite is Jef Pozkanzer's simple <a
+href="http://www.acme.com/software/http_load/"><code>http_load</code></a>
+with a tiny <a
+href="http://mult.ifario.us/files/http_load.c.diff">tweak</a> to show
+the response code if a byte count comes out off.  Using a different
+tool, e.g., <a
+href="http://httpd.apache.org/docs/2.0/programs/ab.html"><code>ab</code></a>
+or <a
+href="http://www.hpl.hp.com/research/linux/httperf/"><code>httperf</code></a>,
+produces similar results.</p>
+
+<h3>The Web Servers: Apache2 and Lighttpd</h3>
+
+<p>There are probably other alternatives that I'm overlooking, but I'm
+going to try the two web servers that I'm familiar with, Lighttpd
+1.4.15 and Apache 2.2.4, both on Mac OS X.</p>
+
+<h4>Configuring Lighttpd</h4>
+
+<p>A Lighttpd configuration file fragment for a FastCGI handler with a
+single process would be:</p>
+
+<pre class="code">fastcgi.server = ( ".fcgi" =&gt;
+                   ( "localhost" =&gt;
+                     (
+                       "socket" =&gt; "/tmp/test.sock",
+                       "bin-path" =&gt; "/path/to/test_OS.fcgi",
+                       "min-procs" =&gt; 1,
+                       "max-procs" =&gt; 1
+                     )
+                   )
+                 )</pre>
+
+<p>See the Lighttpd FastCGI <a
+href="http://trac.lighttpd.net/trac/wiki/Docs:ModFastCGI">documentation</a>
+for the full rundown on parameters.</p>
+
+<p>Also, at least as of Lighttpd 1.4.15, which is the version that
+MacPorts installed for me, the following configuration change is
+necessary to avoid a <a
+href="http://trac.lighttpd.net/trac/ticket/1197">bug</a>:</p>
+
+<pre class="code">server.event-handler = "poll"</pre>
+
+<p>(The default value is <code>freebsd-kqueue</code>; see the Lighttpd
+performance <a
+href="http://trac.lighttpd.net/trac/wiki/Docs:Performance">documentation</a>.)</p>
+
+<p>After copying the file into place, we can spin-up Lighttpd and hit the URL:</p>
+
+<pre class="code">$ lighttpd -f lighttpd.conf
+lighttpd -f lighttpd.conf 
+$ curl http://localhost:8181/test.fcgi
+Process ID: 21139
+Thread ID:  4
+$ curl http://localhost:8181/test.fcgi
+Process ID: 21139
+Thread ID:  5</pre>
+
+<p>The thread ID changes and the process ID doesn't, so things are good.  For a bigger kick:</p>
+
+<pre class="code">$ echo 'http://127.0.0.1:8181/test_OS.fcgi' &gt; /tmp/lighttpd_OS
+$ http_load -parallel 20 -fetches 1000 /tmp/lighttpd_OS 2&gt;&amp;1 | grep -v 8181
+1000 fetches, 20 max parallel, 33908 bytes, in 0.375528 seconds
+33.908 mean bytes/connection
+2662.92 fetches/sec, 90294.2 bytes/sec
+msecs/connect: 0.19518 mean, 1.036 max, 0.09 min
+msecs/first-response: 7.26042 mean, 25.558 max, 4.31 min
+996 bad byte counts
+HTTP response codes:
+  code 200 -- 1000</pre>
+
+<p>The 996 bad byte count errors are expected, since the responses for
+thread IDs 10 through 1005 have a different number of bytes than those
+for thread IDs 6,7,8, and 9.  In any case, so far, so good:</p>
+
+<pre class="code">$ curl http://localhost:8181/test_OS.fcgi
+Process ID: 21139
+Thread ID:  1006</pre>
+
+<h4>Configuring Apache2 with <code>mod_fastcgi</code></h4>
+
+<p>The single-process configuration file fragment for Apache2 with <a href="http://www.fastcgi.com/mod_fastcgi/docs/mod_fastcgi.html"><code>mod_fastcgi</code></a> is:</p>
+
+<pre class="code">LoadModule fastcgi_module modules/mod_fastcgi.so
+
+FastCgiConfig -maxClassProcesses 1 -processSlack 1
+
+&lt;Location /fastcgi&gt;
+        SetHandler fastcgi-script
+        Options ExecCGI
+        allow from all
+&lt;/Location&gt;</pre>
+
+<p>This configuration passes the basic smoke test with no issues.
+Under load, the <code>forkIO</code> version burns about half the CPU
+and the same amount of memory as the <code>forkOS</code> version.
+Both versions use three OS threads most of the time, and as expected
+based on the comments above about the way that Haskell handles
+scheduling, the <code>forkOS</code> version never uses more than four
+OS threads no matter how hard the server is hit.</p>
+
+<h4>Configuring Apache2 with <code>mod_fcgid</code></h4>
+
+<p>The configuration fragment for Apache2 with <a
+href="http://fastcgi.coremail.cn/"><code>mod_fcgid</code></a> is:</p>
+
+<pre class="code">LoadModule fcgid_module modules/mod_fcgid.so
+
+MaxProcessCount 1
+
+&lt;Location /fcgid&gt;
+  SetHandler fcgid-script
+  Options ExecCGI
+  allow from all
+&lt;/Location&gt;</pre>
+
+<p>With the same smoke testing approach as above (with a redirect to
+silence the byte count complaints):</p>
+
+<pre class="code">$ echo 'http://127.0.0.1:7007/fcgid/test_OS.fcgi' > /tmp/fcgid_OS
+$ curl http://127.0.0.1:7007/fcgid/test_OS.fcgi
+Process ID: 16854
+Thread ID:  4
+$ http_load -parallel 20 -fetches 1000 /tmp/fcgid_OS 2&gt;&amp;1 | grep -v fcgid
+1000 fetches, 20 max parallel, 34704 bytes, in 1.2484 seconds
+34.704 mean bytes/connection
+801.028 fetches/sec, 27798.9 bytes/sec
+msecs/connect: 0.294162 mean, 2.339 max, 0.051 min
+msecs/first-response: 12.8977 mean, 1009.92 max, 2.758 min
+986 bad byte counts
+HTTP response codes: 
+  code 200 -- 998
+  code 500 -- 2
+$ curl http://127.0.0.1:7007/fcgid/test_OS.fcgi
+Process ID: 16869
+Thread ID:  7</pre>
+
+<p>Fail, since <code>16854 /= 16869</code>, and based on the
+<code>mod_fcgid</code>'s stated goals of keeping FastCGI handlers
+"fresh" by killing them at the first sign of an issue, not that
+surprising.</p>
+
+<h3>Aggregated Results and Additional Observations</h3>
+
+<p>The results in these tables were generated using
+<code>http_load</code>.  For the "6000/min" test:</p>
+
+<pre class="code">$ http_load -rate 100 -seconds 60 <em>url_file</em> 2&gt;&amp;1 | grep -v <em>port</em></pre>
+
+<p>For the "60000/min" test:</p>
+
+<pre class="code">$ http_load -rate 1000 -seconds 60 <em>url_file</em> 2&gt;&amp;1 | grep -v <em>port</em></pre>
+
+<p>For the fixed rate tests, the number of nines is determined by the proportion of 200 responses out of the total number of responses (the others being 500 and 503).  For the requests per second mark:</p>
+
+<pre class="code">$ http_load -parallel 20 -seconds 10 <em>url_file</em> 2&gt;&amp;1 | grep -v <em>port</em></pre>
+
+<p>First, with the current GHC version:</p>
+
+<table width="75%" align="center">
+<tr style="background: #CCCCCC;"><th colspan="4">GHC 6.6.1, 4-core G5</th></tr>
+<tr><td><u>Server</u></td><td><u>FastCGI Support</u></td><td><code>forkIO</code></td><td><code>forkOS</code></td></tr>
+<tr style="background: #E0E0E0;"><td>Lighttpd 1.4.15</td><td>built-in</td><td style="font-size: small"><span style="color: orange;">Just OK</span><br />6000/min - all good<br />60000/min - <em>incomplete</em><br />max ~3000 req/sec</td><td style="font-size: small"><span style="color: orange;">JUST OK</span><br />6000/min - all good<br />60000/min - <em>incomplete</em><br />max ~2200 req/sec </td></tr>
+<tr><td>Apache 2.2.4</td><td><code>mod_fastcgi</code></td><td style="font-size: small"><span style="color: green;">GOOD</span><br />6000/min - all good<br />60000/min - three 9's<br />max ~2700 req/sec</td><td style="font-size: small"><b><span style="color: green;">BEST</span></b><br />6000/min - all good<br />60000/min - four 9's<br />max ~2100 req/sec</td></tr>
+<tr style="background: #E0E0E0;"><td>Apache 2.2.4</td><td><code>mod_fcgid</code></td><td style="font-size: small"><span style="color: red;">FAIL</span><br />Process not stable.</td><td style="font-size: small"><span style="color: red;">FAIL</span><br />Process not stable.</td></tr>
+</table>
+
+<p>None of these really cause the machine to break a sweat, with the web server doing most of the work and the FastCGI handler never consuming more than 60% of a core and a couple megabytes of resident memory.  An overnight run showed the <code>mod_fastcgi</code> and <code>forkOS</code> combination to perform flawlessly under moderate load for over 10<sup>8</sup> requests.</p>
+
+<p>With the latest GHC release candidate used to compile both the FastCGI package and the handlers:</p>
+
+<table width="75%" align="center">
+<tr style="background: #CCCCCC;"><th colspan="4">GHC 6.9.20070918 (darcs tip), 4-core G5</th></tr>
+<tr><td><u>Server</u></td><td><u>FastCGI Support</u></td><td><code>forkIO</code></td><td><code>forkOS</code></td></tr>
+<tr style="background: #E0E0E0;"><td>Lighttpd 1.4.15</td><td>built-in</td><td style="font-size: small"><span style="color: green;">GOOD</span><br />6000/min - all good<br />60000/min - three 9's<br />~3300 req/sec</td><td style="font-size: small"><span style="color: green;">GOOD</span><br />6000/min - all good<br />60000/min - three 9's<br />~2200 req/sec</td></tr>
+<tr><td>Apache 2.2.4</td><td><code>mod_fastcgi</code></td><td style="font-size: small"><span style="color: orange;">JUST OK</span><br />6000/min - three 9's<br />60000/min - three 9's<br />~2500 req/sec</td><td style="font-size: small"><span style="color: orange;">JUST OK</span><br />6000/min - three 9's<br />60000/min - four 9's<br />~1900 req/sec</td></tr>
+<tr style="background: #E0E0E0;"><td>Apache 2.2.4</td><td><code>mod_fcgid</code></td><td style="font-size: small"><span style="color: red;">FAIL</span><br />Process not stable.</td><td style="font-size: small"><span style="color: red;">FAIL</span><br />Process not stable.</td></tr>
+</table>
+
+<p>Looks like GHC 6.6.1 and Apache2/<code>mod_fastcgi</code> is the winning combination.</p>
+
+<h3>Addendum</h3>
+
+<p>I got GHC 6.6.1 installed and configured the <code>forkIO</code>
+and <code>forkOS</code> handlers on the <a
+href="http://user-mode-linux.sourceforge.net/">User Mode Linux</a>
+server where I have this blog hosted, and it looks like
+<code>forkIO</code> is a winner there, with process stability and
+around 100 requests per second sustained throughput.  With the
+<code>forkOS</code> variant, the process IDs do tick up with each hit,
+but that's a property of <code>fork()</code> on the kernel where one
+process corresponds to one thread rather than being a result of a
+restarted FastCGI handler.</p>

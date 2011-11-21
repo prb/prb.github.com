@@ -1,0 +1,43 @@
+---
+layout: post
+title: "Voldemort-Based Twitter Clone Talk at OSCON"
+permalink: voldemort-based-twitter-clone-talk-at-oscon.html
+categories: [oscon, voldemort, nosql, twitter]
+---
+
+<p><a href="http://netzooid.com">Dan</a> and I just finished up our <a
+href="http://en.oreilly.com/oscon2009/public/schedule/detail/8362">talk</a>
+at OSCON.  You can download the <a
+href="http://bit.ly/4dP7zY">slides</a> or <a
+href="http://bit.ly/MDyVj">view</a> it on Slideshare.  I'll probably
+take it down at some point in the near future, but the sample system
+from the presentation is <a href="http://tat1.datapr0n.com:8080">up
+and running</a> for the moment.</p>
+
+<p>We got started on the material for the talk several months back
+with the Twitter one-to-many publishing problem as a motivating
+problem to play with various non-relational data stores, and after
+some dabbling with <a href="http://bit.ly/EdUEt">Cassandra</a> and <a
+href="http://bit.ly/Zck7F">HBase</a>, we ended up focusing on <a
+href="http://bit.ly/ocBX0">Voldemort</a> as an initial backend for the
+system.  It is very likely that we'll craft some additional backends,
+and I'd particularly like to get to a more forgiving model for storing
+lists.  (I'm already part way there on <a
+href="http://bit.ly/12AYmf">Dynomite</a> with <a
+href="http://bit.ly/BYMdW">Osmos</a> as the storage engine.)</p>
+
+<p>The system described in the talk uses a small (two nodes) Voldemort
+cluster and a small cluster of web nodes (JAX-RS with a jQuery
+front-end) to implement enough microblogging functionality to be
+interesting &#8212; users, follow/followed, publishing &#8212; along
+with a simple dashboard implemented with Cacti and rudimentary
+deployment automation.  The <a href="http://bit.ly/koe3D">source</a>
+is out on GitHub if you want to take a look.  (Feel free to fork with
+it...)</p>
+
+<p style="text-align: center;"><img alt="[dashboard snapshot]"
+src="http://mult.ifario.us/images/v_dboard.png" /></p>
+
+<p>Dan's blog entry on the presentation is <a
+href="http://bit.ly/3ciEo6">here</a>.</p>
+

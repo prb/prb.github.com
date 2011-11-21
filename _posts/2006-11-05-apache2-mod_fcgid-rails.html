@@ -1,0 +1,11 @@
+---
+layout: post
+title: "Apache2 + mod_fcgid + Rails"
+permalink: apache2-mod_fcgid-rails.html
+categories: [rails, apache2, mod_fcgid, lighttpd, fastcgi, typo]
+---
+<p>With a default Typo configuration running on <a href="http://www.lighttpd.net/">lighttpd</a>, it was producing more output in the error log than in the access log with something about "missing cleanup", so I finally got around to migrating over to <a href="http://httpd.apache.org/docs/2.0/">apache2</a> and <a href="http://fastcgi.coremail.cn/">mod_fcgid</a>.  (The short-term solution was a couple of cron jobs to keep the <tt>lighttpd</tt> process up.)  The usual configuration work (see, e.g., <a href="http://blog.duncandavidson.com/">James Duncan Davidson</a>'s <a href="http://blog.duncandavidson.com/2006/02/rails_on_apache.html">write-up</a>) was a dead-end, but turning up the logging verbosity on the apache2 instance had the solution:</p>
+
+<pre class="code">[Sun Nov 05 18:13:19 2006] [info] mod_fcgid: read data timeout in 5 seconds</pre>
+
+<p>Initialization for one of the processes takes <em>way</em> longer than that, so putting some more sane values into the <tt>mod_fcgid</tt> configuration along the lines of what <a href="http://www.meepr.com/">Spencer Miles</a> <a href="http://www.meepr.com/2006/07/13/deploying-a-rails-app-using-apache-2x-and-fastcgi-mod_fcgid/">used</a> was the solution.  At least so far, the <tt>apache2</tt> and <tt>mod_fcgid</tt> combination is much snappier and more stable than the <tt>lighttpd</tt> configuration.</p>

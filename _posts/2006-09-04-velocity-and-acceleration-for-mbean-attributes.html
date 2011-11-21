@@ -1,0 +1,143 @@
+---
+layout: post
+title: "Velocity and Acceleration for MBean Attributes"
+permalink: velocity-and-acceleration-for-mbean-attributes.html
+categories: [java, jmx, timeseries, rateofchange, moving, average, monitormbean]
+---
+<p>Testing is great, but instrumentation is both critically important
+and often ignored.  After all, failures always come from untested
+scenarios.</p>
+
+<p>Basic instrumentation (like heap data) is good, but basic
+instrumentation is also a bit like taking a picture of a race car.
+Other than from context, it's impossible to know whether it's going
+200MPH or just parked in the middle of the racetrack.  For example,
+the average velocity of a response time parameter indicates whether
+response times are getting longer or shorter or staying about the
+same, and the average rate of change of the average rate of change
+indicates whether a linear extrapolation is likely to miss high or
+low.</p>
+
+<p>Here's a simple approach to get thumbnail rates of change for a
+stream of values; I'll explain how to integrate it with JMX a little
+later.  The first ingredient is a useful little utility class that
+computes the moving average of a stream of <code>long</code> values.
+(Clearly the values can't be that large, ideally no larger than
+<code>MAX_LONG/2*size</code>.)</p>
+
+<pre class="code">public class CircularWindow {
+  private long sum;
+  private long last;
+  private long[] x;
+  private int ptr;
+  private int size;
+  private boolean full;
+
+  public CircularWindow(int size) {
+    x = new long[size];
+    this.size = size;
+  }
+
+  public void add(long y) {
+    sum += (last = y) - x[ptr];
+    x[ptr] = y;
+    if (++ptr == size) {
+      ptr = 0;
+      full = true;
+    }
+  }
+
+  public long average() {
+    return full?(sum/size):((ptr!=0)?(sum/ptr):sum);
+  }
+
+  public long last() {
+    return last;
+  }
+}
+</pre>
+
+<p>It is built with the assumption that the average will be requested
+frequently but not necessarily every time a value is added.  (If the
+average was requested infrequently versus the size of the buffer, it
+would make more sense to compute the sum only when the average was
+requested.)</p>
+
+<p>To get at rates of change, chain up two of the windows and add
+values like so:</p>
+
+<pre class="code">D_s.add(value - s.last());
+s.add(value);</pre>
+
+<p>Now, what does this do?  For a hint, try this:</p>
+
+<pre class="code">CircularWindow x = new CircularWindow(100);
+CircularWindow y = new CircularWindow(100);
+CircularWindow z = new CircularWindow(100);
+for (long i=0; i &lt; 50000; ++i) {
+  long value = i*i;
+  z.add(value - y.last() - x.last());
+  y.add(value- x.last());
+  x.add(value);
+  if (i > 49990) {
+    System.out.println("x av = " + x.average());
+    System.out.println("y av = " + y.average());
+    System.out.println("z av = " + z.average());
+  }
+}</pre>
+
+<p>The series <code>y</code> ticks up two every time, and the <code>z</code> series is constant 2.  It looks like the cleverly-named <code>D_s</code> series from above approximates the first derivative of the <code>s</code> series, and presuming that the values in the series come from a suitable well-behaved differentiable function, that's obvious if you write it out:</p>
+
+<p align="center">D_s(n+1) ~ (s(n+1) - s(n))/((n+1) - n) = s(n+1) - s(n)</p>
+
+<p>The main window and the second window for tracking the rate of
+change can be encapsulated conveniently:</p>
+
+<pre class="code">public class VelocityWindow {
+  private CircularWindow s;
+  private CircularWindow D_s;
+
+  public VelocityWindow(int size) {
+    s = new CircularWindow(size);
+    D_s = new CircularWindow(size);
+  }
+
+  public void add(long x) {
+    D_s.add(x - s.last());
+    s.add(x);
+  }
+
+  public long average() {
+    return s.average();
+  }
+
+  public long velocity() {
+    return D_s.average();
+  }
+
+  public long ticksToClear() {
+    if (D_s.average >= 0) return -1;
+    return s.last() / D_s.average();
+  }
+}</pre>
+
+<p>The fully reusable path for integration into an application's JMX
+instrumentation is via a <a
+href="http://java.sun.com/j2ee/1.4/docs/api/javax/management/monitor/MonitorMBean.html"><code>MonitorMBean</code></a>
+implementation.  A <code>MonitorMBean</code> typically uses a timer
+(e.g., a <a
+href="http://java.sun.com/j2se/1.4.2/docs/api/java/util/TimerTask.html"><code>TimerTask</code></a>)
+to sample an attribute and then either exposes attributes or fires
+notifications.  (The <a
+href="http://java.sun.com/j2ee/1.4/docs/api/javax/management/monitor/GaugeMonitor.html"><code>GaugeMonitor</code></a>
+is similar in flavor but not really the same thing.)</p>
+
+<p>I haven't ever gotten around to taking the
+<code>MonitorMBean</code> approach, since the quick and dirty path is
+simply to embed the <code>VelocityWindow</code> directly in the MBean
+and expose <code>average</code> and <code>velocity</code> as
+attributes.  Another derived metric that is useful when tracking
+backlogs is ticks to clear, which would either be infinite if
+<code>D_s.average()</code> is non-negative or
+<code>-1*s.last()/D_s.average()</code> otherwise.</p>
+

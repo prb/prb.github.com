@@ -1,0 +1,71 @@
+---
+layout: post
+title: "Seems Clear Enough from the Specification"
+permalink: seems-clear-enough-from-the-specification.html
+categories: [atom, googlereader]
+---
+
+<p>I can understand how people get confused with RSS since what passes
+for a <a
+href="http://cyber.law.harvard.edu/rss/rss.html">specification</a>
+isn't exactly precise, but the Atom syndication spec (a.k.a. <a
+href="http://www.ietf.org/rfc/rfc4287">RFC 4287</a>) is nice work and
+comes with an unambiguous RelaxNG grammar.  Which is why I find this
+(sent by a friend who reads this blog in <a
+href="http://reader.google.com/">Google Reader</a>) irritating:</p>
+
+<p style="text-align: center;"><img src="http://mult.ifario.us/files/bad_title.png" alt="mis-rendered title" /></p>
+
+<p>This is wrong.  (For what it's worth, this doesn't happen for me in Google Reader running in Firefox 3.0.1.)  Extracting a bit of the grammar, the title of the feed is an <code>atom:title</code> element, and XHTML content is supported:</p>
+
+<pre class="code">atomTitle = element atom:title { atomTextConstruct }
+
+anyXHTML = element xhtml:* {
+   (attribute * { text }
+    | text
+    | anyXHTML)*
+}
+
+atomPlainTextConstruct =
+   atomCommonAttributes,
+   attribute type { "text" | "html" }?,
+   text
+
+atomXHTMLTextConstruct =
+   atomCommonAttributes,
+   attribute type { "xhtml" },
+   xhtmlDiv
+
+atomTextConstruct = atomPlainTextConstruct | atomXHTMLTextConstruct
+
+xhtmlDiv = element xhtml:div {
+   (attribute * { text }
+    | text
+    | anyXHTML)*
+}</pre>
+
+<p>So the construct from my feed is valid:</p>
+
+<pre class="code">&lt;title type="xhtml"&gt;
+  &lt;div xmlns="http://www.w3.org/1999/xhtml"&gt;mult.ifario.us - All Posts&lt;/div&gt;
+&lt;/title&gt;</pre>
+
+<p>I spent time with the excellent and useful <a
+href="http://feedvalidator.org/">Feed Validator</a> when I was writing
+<a href="http://datapr0n.com/perpubplat">perpubplat</a>, even
+compromising on things that I felt I shouldn't have to compromise on,
+e.g., <a
+href="http://feedvalidator.org/docs/warning/AvoidNamespacePrefix.html">namespace
+prefixes</a>, in the name of interoperability. The validator awards
+the feed a squeaky clean <a
+href="http://feedvalidator.org/check.cgi?url=http%3A%2F%2Fmult.ifario.us%2Ff%2Fa%2Fatom.xml">bill
+of health</a>. Nonetheless, this issue makes my feed ugly in Google
+Reader, since the UI shows an abbreviation like <code>&lt;div
+xmlns="...</code> in the sidebar and elsewhere. (FWIW, this Google
+Reader issue isn't caught by the <a
+href="http://intertwingly.net/wiki/pie/TitleConformanceTests?action=highlight&amp;value=CategoryConformanceTests">title
+conformance tests</a>.)</p>
+
+<p>I've posted a bug in the relevant Google Group <a
+href="http://groups.google.com/group/google-reader-troubleshoot/browse_thread/thread/a31562d48489f7cd#">here</a>.</p>
+

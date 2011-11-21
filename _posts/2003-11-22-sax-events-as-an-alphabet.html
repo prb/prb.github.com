@@ -1,0 +1,17 @@
+---
+layout: post
+title: "SAX Events as an Alphabet"
+permalink: sax-events-as-an-alphabet.html
+categories: [xml, xpath, streamingxml, automata, regularlanguages, sax, dom]
+---
+<p>Applying XPath to a SAX stream for filtering or selective construction of heavier-weight objects (like a DOM) is one of the PAQ (<em>p</em>erennially <em>a</em>sked <em>q</em>uestions) on <a href="http://www.xml.org/xml/xmldev.shtml">xml-dev</a>.</p>
+
+<p>Almost two years ago, I was <a href="http://lists.xml.org/archives/xml-dev/200111/msg00932.html">fooling around</a> with an approach to applying XPath expressions to SAX streams by looking at the SAX events as the letters in an alphabet and passing them through a collection of automata. If the automaton hit an <b>accept</b> state, the expression had a match in the document. My plan was to use the concept for high-performance XPath-based routing of streaming XML documents, and initial indications were that a SAX parse with queries was substantially faster than building a DOM (with no queries) for smallish (~5kb) XML documents.</p>
+
+<p>Like most weekend projects, it eventually went by the wayside, and even then I had skipped some of the nastier bits (e.g., reverse axes) of XPath and only got as far as implementing the necessary operations to merge multiple machines together on <b>AND</b> and <b>OR</b>. (<a href="http://www.brics.dk/~amoeller/">Anders Moeller</a>'s <a href="http://www.brics.dk/~amoeller/automaton/">dk.brics.automaton</a> does a nice job for plain old regular expressions.)</p>
+
+<p>And I would have been late to the game anyway&#8230; Apropos to a recent <a href="http://ask.slashdot.org/article.pl?sid=03/11/16/060258&amp;mode=thread&amp;tid=126&amp;tid=156&amp;tid=18">posting</a> on <a href="http://www.slashdot.org/">Slashdot</a>, if I'd thought to type the query <a href="http://citeseer.nj.nec.com/cs?cs=1&amp;q=xml+and+event+and+%22finite+state%22&amp;submit=Documents&amp;co=Expected+Citations&amp;cm=50&amp;cf=Any&amp;ao=Expected+Citations&amp;am=20&amp;af=Any">XML and event and &#8220;finte state&#8221;</a> into <a href="http://en.wikipedia.org/wiki/Citeseer">CiteSeer</a>, I would have seen that other people were already looking at the problem in similar ways. Specifically, I would have found a <a href="http://www.cs.berkeley.edu/~franklin/Papers/XFilterVLDB00.pdf">paper</a> from 2000 by <a href="http://ppti.ugm.ac.id/download/Mirrors/www.cs.umd.edu/%257Ealtinel/">Mehmet Altinel</a> and <a href="http://www.cs.berkeley.edu/~franklin/">Michael Franklin</a> in which they discuss a scalable, event-driven, finite state machine-based approach to executing XPath queries.</p>
+
+<p>This is top-of-mind right now because I ran across some recent work from <a href="http://www.cs.umd.edu/~pengfeng/">Feng Peng</a> and <a href="http://www.cs.umd.edu/~chaw/">Sudharshan Charwathe</a> that uses a hierarchical arrangement of pushdown transducers to model an XPath expression, and it will actually draw the hierarchy! The project is called <a href="http://www.cs.umd.edu/projects/xsq/">XSQ</a>, and there is a <a href="http://www.rrd.umd.edu/2003onlineposters/XSQ.pdf">poster</a> that gives a nice summary and an example.</p>
+
+<p>(Among others, <a href="http://www.cs.washington.edu/homes/suciu/">Dan Suciu</a>'s <a href="http://www.cs.washington.edu/homes/suciu/XMLTK/">XMLTK</a> and the <a href="http://www.cs.berkeley.edu/~diaoyl/yfilter/technology.htm">YFilter</a> project are also worth a visit.)</p>

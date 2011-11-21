@@ -1,0 +1,27 @@
+---
+layout: post
+title: "Fun with Compiler Minutia"
+permalink: fun-with-compiler-minutia.html
+---
+<p>I've always liked the <a href="http://blogs.msdn.com/lucabol/archive/2004/08/31/223580.aspx">little differences</a> that make every platform special.</p>
+
+<p>For example, consider the following C++ program:</p>
+
+<pre class="code">#include &lt;iostream.h&gt;
+main() {
+  int i;
+  i=0;
+  cout &lt;&lt; ++i &lt;&lt; i++ &lt;&lt; ++i;
+}</pre>
+
+<p>Compiling with <code>g++</code> (version 3.3) on my PowerBook yields the output <code>113</code>, but on a Linux box, compiling with <code>g++</code> (version 2.95.4) outputs <code>311</code>.</p>
+
+<p>Here's a related brainteaser, albeit in Java.  Consider the following Java fragment:</p>
+
+<pre class="code">int x=0;
+System.out.println(++x + &quot;&quot; + x++ + &quot;&quot; + ++x);</pre>
+
+<ol>
+<li>What does it output?</li>
+<li>Can parentheses be inserted so that the output is different?</li>
+</ol>

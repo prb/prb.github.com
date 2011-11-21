@@ -1,0 +1,49 @@
+---
+layout: post
+title: "<code>@Override</code> Idiosyncrasies"
+permalink: override-idiosyncrasies.html
+categories: [java, jdk5, jdk6, annotation, override]
+---
+
+<p>Just to prove that you frequently learn something new about a
+language you're familiar with, I recently learned that the following
+will compile on JDK6:</p>
+
+<pre class="code">interface I {
+  void m();
+}</pre>
+
+<pre class="code">class C implements I {
+  @Override
+  public m() {
+  }
+}</pre>
+
+<p>(It even compiles on JDK6 with <code>-source 1.5</code>, which seems
+like a bug under the circumstances, but no matter.)</p>
+
+<p>I'm sure that this was discussed <em>ad nauseum</em> by the <a
+href="http://jcp.org/en/jsr/detail?id=175">JSR-175</a> expert group
+and then subsequently when <code>@Override</code> behavior was
+overridden for JDK6, but this seems wrong if you ask me.  (I'd argue
+that the JLSv3 <a
+href="http://java.sun.com/docs/books/jls/third_edition/html/interfaces.html#9.6.1.4">concurs</a>.)
+The <code>@Override</code> annotation, under the JDK5
+interpretation, indicates the replacement piece of code in the
+superclass, along with all of its side-effects.  Implementing a method
+on an interface does not change behavior and requires no more
+attention from the developer than an understanding of the contract
+that the interface represents.  If anything, an
+<code>@Implements</code> annotation would have been a better choice
+than mucking up the <code>@Override</code> annotation to better align
+with the murky definition of overriding in the JLS.</p>
+
+<p>To make things more confusing, the current JDK6 documentation is
+incorrect.  The JDK6 API documentation <a
+href="http://java.sun.com/javase/6/docs/api/java/lang/Override.html">says</a>
+the same thing as the JDK5 documentation <a
+href="http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Override.html">does</a>,
+but JDK7 API documentation <a
+href="http://download.java.net/jdk7/docs/api/java/lang/Override.html">describes</a>
+the JDK6 behavior.</p>
+

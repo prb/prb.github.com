@@ -1,0 +1,15 @@
+---
+layout: post
+title: "Command Line Argument Parsing in Java"
+permalink: command-line-argument-parsing-in-java.html
+---
+<p>Command line argument parsing in Java is one of those things that makes me scratch my head &#8212; "Hasn't <i>someone</i> gotten this right yet, for my definition of right?"  When we needed a library for <a href="http://pxe.fivesight.com">PXE</a>, I played with <a href="http://jakarta.apache.org/commons/cli/">Commons CLI</a> (including the stillborn version 2), Martian's <a href="http://www.martiansoftware.com/jsap/">JSAP</a>, John Lloyd's <a href="http://www.cs.ubc.ca/~lloyd/java/argparser.html">approach</a> (complete with 2,000-line core class &#8212; Gah!), and whatever else <a href="http://www.google.com/search?q=commandline+argument+parser+java">Google</a> had to offer.  (<a href="http://www.kohsuke.org/">Kohsuke</a>'s <a href="https://args4j.dev.java.net/">args4j</a> and <a href="http://www.javarants.com">Sam</a>'s <a href="http://www.javarants.com/C1464297901/E20051224105918/index.html">take</a> weren't around at the time.)  Commons CLI was good enough for initial work, but I wrote my <a href="http://cvs.fivesight.com/viewrep/PXE/pxe/utils/src/java/com/fs/utils/cli">own</a> once I got frustrated enough with it.  My requirements were:</p>
+
+<ul>
+<li>Multiple valid command line argument combinations per command with single help output.</li>
+<li>Match-based selection of which combination format applies.</li>
+<li>Nested logical (e.g., XOR or AND) relationships between arguments within a combination.</li>
+<li>Multiple named, ordered, non-flagged (i.e., no <tt>-x</tt>) arguments with multiplicities and good help output, like for <tt>cp</tt> with <tt>1..n</tt> "from" files and a single "to" directory.</li>
+</ul>
+
+<p>Maybe I'll package up my version, but a similarly picky person would probably find something objectionable in form or function and write their own anyway.  (And, for that matter, it's a pleasant afternoon's diversion to do so.)</p>

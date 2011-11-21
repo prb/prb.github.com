@@ -1,0 +1,18 @@
+---
+layout: post
+title: "More Thorough Validation of WSDL documents and <code>schemaLocation</code>"
+permalink: more-thorough-validation-of-wsdl-documents-and-code-schemalocation-code.html
+---
+<p>The <code>schemaLocation</code> attribute and its cousin <code>noNamespaceSchemaLocation</code> are used to "suggest" the location or locations of a schema per namespace for validation purposes.  The value of the <code>schemaLocation</code> attriubte consists of a list of whitespace-separated pairs of a <em>namespace URI</em> and a <em>location</em> of a schema for elements in that namespace.</p>
+
+<p>For modular documents like WSDL (extensibility via <code>&lt;xsd:any namespace="##other" .../&gt;</code>), this means that the <code>schemaLocation</code> attribute will contain several items.  For example, for a WSDL document without extensions, the pair:</p>
+
+<pre class="code">http://schemas.xmlsoap.org/wsdl/ http://schemas.xmlsoap.org/wsdl/2003-02-11.xsd</pre>
+
+<p>should be present in the <code>schemaLocation</code> attribute.  Pairs should <strong>also</strong> be present for the namespaces used for any extensibility elements.  For example, for BPEL <code>partnerLink</code> definitions, the pair</p>
+
+<pre class="code">http://schemas.xmlsoap.org/ws/2003/05/partner-link/  http://schemas.xmlsoap.org/ws/2003/05/partner-link/</pre>
+
+<p>should also be present.  (The first use of the URI is the namespace; the second is a URL for the schema.)  The same applies to the <a href="http://www.w3.org/TR/wsdl#A4.2">SOAP binding</a>, <a href="http://www.w3.org/TR/wsdl#A4.3">HTTP binding</a>, etc.</p>
+
+<p>This is still only a partial solution, since it doesn't prevent extensibility elements from being used in inappropriate locations, but it's better than letting the extensibility elements fall silently through the <code>##other</code> hole.</p>

@@ -1,0 +1,44 @@
+---
+layout: post
+title: "Conditional GET Support for perpubplat"
+permalink: conditional-get-support-for-perpubplat.html
+categories: [perpubplat, http, conditionalget, etag]
+---
+
+<p>As part of being a good netizen, I added conditional GET support
+(per <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.3">9.3</a>
+in the HTTP 1.1 spec) to perpubplat in the form of <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.19"><code>ETag</code></a>
+(MD5 of feed URI and last modified date) and <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.29"><code>Last-Modified</code></a>
+headers on generated Atom feeds and corresponding <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.26"><code>If-None-Match</code></a>
+and <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.25"><code>If-Modified-Since</code></a>
+headers on requests for Atom feeds with proper precedence.  (For
+precedence, the spec dictates that a successful
+<code>If-None-Match</code> assertion means that any
+<code>If-Modified-Since</code> assertion is ignored.)  A quick
+<code>curl</code> experiment shows that things appear to work:</p>
+
+<pre class="code">$ curl -i -s -o - http://mult.ifario.us/f/t/haskell/atom.xml | \
+> egrep \^ETag\|\^Last-Modified\|\^HTTP\/
+HTTP/1.1 200 OK
+Last-Modified: Sat, 23 Feb 2008 23:55:23 GMT
+ETag: 78790a6a7d6bddd10f6f9c412f2aba97
+$ curl -H 'If-None-Match: 78790a6a7d6bddd10f6f9c412f2aba97' \
+> -i -s -o - http://mult.ifario.us/f/t/haskell/atom.xml | \
+> egrep \^HTTP\/
+HTTP/1.1 304 Not Modified
+$ curl -H 'If-Modified-Since: Sat, 23 Feb 2008 23:55:23 GMT' \
+> -i -s -o - http://mult.ifario.us/f/t/haskell/atom.xml | \
+> egrep \^HTTP\/
+HTTP/1.1 304 Not Modified
+$ curl -H 'If-None-Match: foo' -H 'If-Modified-Since: Sat, 23 Feb 2008 23:55:23 GMT'
+> -i -s -o - http://mult.ifario.us/f/t/haskell/atom.xml | \
+> egrep \^HTTP\/
+HTTP/1.1 200 OK
+</pre>
+
+

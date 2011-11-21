@@ -1,0 +1,128 @@
+---
+layout: post
+title: "How to Monitor Java Applications on EC2 with Cacti"
+permalink: how-to-monitor-java-applications-on-ec2-with-cacti.html
+categories: [cacti, management, monitoring, java, ec2, smartfox]
+---
+
+<p>As part of a scale-out effort for a customer moving from a single
+node hosted on <a href="http://www.slicehost.com">Slicehost</a> to a
+multi-node environment hosted in the US and EU on <a
+href="http://aws.amazon.com/ec2/">Amazon EC2</a>, I wanted a way to
+introduce a combination of application and host-level monitoring for
+the nodes.  I settled on the combination <a
+href="http://www.rrdtool.org/">RRDTool</a> graphs served by <a
+href="http://www.cacti.net/">Cacti</a> and an alive check provided by
+a third party (<a href="http://www.monitis.com">Monitis</a>), but
+there was no immediately obvious way to bridge the gap between the
+Java services and the Cacti convenience wrapper around RRDTool.</p>
+
+<p>This was before the recent <a
+href="http://aws.amazon.com/about-aws/whats-new/2009/05/17/monitoring-auto-scaling-elastic-load-balancing/">announcement</a>
+by Amazon of <a href="http://aws.amazon.com/cloudwatch">monitoring
+functionality</a> for EC2 nodes, but that service wouldn't meet the
+primary use case of application versus host monitoring.  A tool like
+JConsole didn't make sense because I was interested in getting a
+single portal view across the fleet and in having retrospective data
+to make visual day-to-day or week-to-week comparisons.</p>
+
+<p>This post describes how to bring the pieces together, and the
+technique is equally applicable to non-Java systems &#8212; any system
+that can serve HTTP requests can be instrumented.  In the end, about a
+day's worth of experimentation and work was enough to get me the level
+of instrumentation I was after.</p>
+
+<h2>Host Configuration Requirements</h2>
+
+<p>Each of the nodes in the fleet runs on a slightly modified CentOS
+5.2 AMI (based on <a
+href="http://developer.amazonwebservices.com/connect/entry.jspa?externalID=1901">one
+(ami-1363877a)</a> provided by Rightscale), and getting basic host
+information exposed over SNMP is straightforward:</p>
+
+<pre class="code">$ yum install net-snmp
+[... lots of output ...]
+$ mv /etc/snmp/snmpd.conf /etc/snmp/snmpd.conf-old
+$ echo 'rocommunity public' > /etc/snmp/snmpd.conf
+$ /etc/init.d/snmpd restart</pre>
+
+<p>The underlying assumption, of course, is that the instance was
+launched under a security group that exposes UDP ports 161 and 162 to
+the host that will be running Cacti.  This can all be made to work
+without assigning elastic IP numbers to the nodes and to the Cacti
+host, but it's easier.</p>
+
+<p>For the Cacti host, more or less any modern Linux distribution
+(e.g., Ubuntu or CentOS) will do, and I'd recommend following <a
+href="http://www.anvilon.com/">Eric Hammond</a>'s very nice <a
+href="http://developer.amazonwebservices.com/connect/entry.jspa?externalID=1663">tutorial</a>
+about setting up MySQL on an EBS volume before doing the Cacti
+install.  For the same reason it makes sense to have MySQL on the
+attached EBS volume (survive instance termination, support backups,
+etc.), it makes sense to store RRDTool's backing data there as
+well.</p>
+
+<h2>Instrumentation and Collection</h2>
+
+<p>The Java application in question (<a
+href="http://www.smartfoxserver.com/">SmartFox</a>) has no explicit
+support for exporting metrics and no MBeans exposed for access via
+JMX, but it does provide some API-level support for basic information
+and an embedded servlet container (<a
+href="http://www.mortbay.org/">Jetty</a>, of course).  (SmartFox does
+bundle a Flash-based administrative tool, but like JConsole it's
+single-node and does not provide much beyond in the way of
+retrospective data.)</p>
+
+<p>After some poking around (i.e., reading PHP source code) in Cacti,
+I found that Cacti's standard "Script/Command" data input method
+consumes data as space-separated name/value pairs on a single
+line:</p>
+
+<pre class="code">name1:value1 name2:value2 ...</pre>
+
+<p>So I put together a simple servlet to grab the server singleton
+object from the SmartFox API and print metrics out on a
+<code>text/plain</code> response.  This could just as easily be done
+with an MBean instance looked up via the JVM's default JMX
+infrastructure or a metric facade injected into the servlet as part of
+the overall web application &#8212; the point is that the single line
+of name/value pairs is the required interface to Cacti.</p>
+
+<p>The data is then accessed via a <code>curl</code> invocation
+templated for variables:</p>
+
+<pre class="code">curl http://&lt;host&gt;:&lt;port&gt;/&lt;webapp&gt;/sfs-status?zone=&lt;zone&gt;</pre>
+
+<p>The fields in angle brackets are input fields that will be
+filled-in by other objects in Cacti, and the output fields for the
+data input method should be named to match the names in the name/value
+pairs from above.</p>
+
+<p>The downside of this approach is that there is quite a bit of
+configuration that goes on top of this one-liner (graphs instantiate
+graph templates and pull from data sources that reference data
+templates that in turn reference data input methods, or something like
+that), but it more or less just works.  (Even at that, it is less
+painful and more forgiving than some other tools I've worked with,
+e.g., ZenOSS.)  A couple of hours of experimentation should be enough
+to get a decent set of basic graphs customized for the application at
+hand.</p>
+
+<p style="align: center;"><img alt="[an RRD graph]"
+src="http://mult.ifario.us/files/rrd_graph.png" /></p>
+
+<p>As mentioned above, it goes without saying that the EC2 security groups for
+the instances need to be set up so that this data is not generally
+accessible but can still be seen by the Cacti host.</p>
+
+<h2>Tips and Tricks</h2>
+
+<p>The only real issues that I encountered in the process were some
+disconnects between what Cacti allows you to enter and what RRDTool
+accepts as input.  Once you're done with the necessary setup or some
+tweaks, if your graphs either don't appear or disappear, there's a
+good chance that RRDTool doesn't like what Cacti is asking it to do.
+In that case, turn on the "graph debug" option to see what Cacti is
+sending to RRDTool and adjust your configuraiton accordingly.</p>
+

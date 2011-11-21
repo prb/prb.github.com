@@ -1,0 +1,62 @@
+---
+layout: post
+title: "A Little Fun with Concurrency in Io"
+permalink: a-little-fun-with-concurrency-in-io.html
+categories: [io, iolanguage, concurrency]
+---
+<p>I've been experimenting with <a href="http://www.iolanguage.com">Io</a>, a "small, <a href="http://c2.com/cgi/wiki?PrototypeBasedProgramming">prototype-based</a> programming language".  Io has a host of interesting features, but the way it deals with concurrency is what interests me. (See, e.g., <a href="http://blogs.fivesight.com/pbblog/index.php?p=62">2004-02-16</a> or <a href="http://blogs.fivesight.com/pbblog/index.php?p=61">2004-01-04</a>.)</p>
+
+<p>Io supports both an interactive front-end and an executable mode; what follows is a session with the front-end that illustrates some of the concurrency features. This first set of code creates an object and adds a method named <code>weave</code> that iterates through an input string character by character, yielding control after each iteration. The trio of gibberish strings will be used later:</p>
+
+<pre class="code"><b>Io&gt;</b> o1 := Object clone
+<b>Io&gt;</b> o1 weave := method(str,
+  str foreach(i,v,v asCharacter print; yield))
+<b>Io&gt;</b> s1 := "hlccrtod"; s2 := "eooue r"; s3 := "l nrnwl";
+<b>Io&gt;</b> chug := block(while(activeCoroCount &gt; 1, yield))</pre>
+
+<p>The <code>chug</code> code block is only necessary because the interactive front-end grabs control after the first call to <code>yield</code>; it could be left out in a standalone Io program.</p>
+
+<p>The first line below invokes the <code>weave</code> method three times, <em>synchronously</em>; the second line makes three <em>asynchronous</em> calls on the <code>weave</code> method (on the same object). (The <code>@@</code> decoration on the method means call asynchronously and return Nil.)</p>
+
+<pre class="code"><b>Io&gt;</b> o1 weave(s1); o1 weave(s2); o1 weave(s3);
+hlccrtodeooue rl nrnwl
+<b>Io&gt;</b> o1 @@weave(s1); o1 @@weave(s2); o1 @@weave(s3); chug
+hlccrtodeooue rl nrnwl</pre>
+
+<p>Both produce the same output because Io handles messages in FIFO order.</p>
+
+<p>Objects in Io are like threads, and if we clone the object <code>o1</code> and make three asynchronous calls, the three strings are interleaved character-by-character:</p>
+
+<pre class="code"><b>Io&gt;</b> o2 := o1 clone; o3 := o1 clone
+<b>Io&gt;</b> o1 @@weave(s1); o2 @@weave(s2); o3 @@weave(s3); chug
+hello concurrent world</pre>
+
+<p>Io also supports Futures, i.e., handles to the to-be-returned value of an asynchronously invoked method.</p>
+
+<pre class="code"><b>Io&gt;</b> bar := Object clone
+<b>Io&gt;</b> bar l8r := method(str, yield; str)
+<b>Io&gt;</b> bar l8r("hello from the present")
+==&gt; "hello from the present"
+<b>Io&gt;</b> foochur := bar @l8r("hello from the past")
+==&gt; Future_0x3279d0</pre>
+
+<p>A <code>Nil</code> return value from <code>isReady</code> means that the method hasn't completed (and that's what's expected from the initial yield in the <code>l8r</code> method):</p>
+
+<pre class="code"><b>Io&gt;</b> foochur isReady
+==&gt; Nil</pre>
+
+<p>Dislodging it with a call to the <code>chug</code> block defined above makes the result accessible:</p>
+
+<pre class="code"><b>Io&gt;</b> chug
+<b>Io&gt;</b> foochur isReady
+==&gt; Future_0x3279d0
+<b>Io&gt;</b> foochur value
+==&gt; "hello from the past"</pre>
+
+<p>Io also allows methods to be attached to futures as listeners via <code>sendResultTo</code>:</p>
+
+<pre class="code"><b>Io&gt;</b> echo := Object clone; echo out := method(str, str print)
+<b>Io&gt;</b> bar @(l8r("hello")) sendResultTo(echo,"out")
+==&gt; Future_0x32e210
+<b>Io&gt;</b> chug
+hello</pre>

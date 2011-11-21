@@ -1,0 +1,69 @@
+---
+layout: post
+title: "\"Hello World\" for Perpubplat"
+permalink: hello-world-for-perpubplat.html
+categories: [perpubplat, haskell]
+---
+
+<p>Setting up perpubplat to talk to a web server takes a bit of work,
+but once you've got the <a
+href="http://mult.ifario.us/p/darcs-repository-for-perpubplat">code</a>,
+bootstrapping a post can be done with just <code>ghci</code>.</p>
+
+<p>The perpubplat configuration in the Darcs repository expects to
+find posts and comments stored under <code>/tmp/content</code> and
+drafts stored under <code>/tmp/drafts</code>.  (Clearly, a different
+configuration would be desirable for production use...)  Create those
+directories and then a file <code>/tmp/drafts/hello-world.draft</code>
+with the following contents:</p>
+
+<pre class="code">title: Hello, World!
+tags: one two three
+
+&#45;-- START BODY ---
+
+&lt;p>Hello, World!&lt;/p>
+
+&#45;-- END BODY ---
+</pre>
+
+<p>Next, load up the code in <code>ghci</code>:</p>
+
+<pre class="code">$ cd perpubplat/perpubplat/src
+$ ghci Blog.BackEnd.IoOperations Blog.Model.Entry \
+  Blog.BackEnd.ModelTransformations Blog.FrontEnd.Presentation \
+  Blog.FrontEnd.Views
+GHCi, version 6.8.2: http://www.haskell.org/ghc/  :? for help
+Loading package base ... linking ... done.
+[ 1 of 13] Compiling Blog.Widgets.FlickrBadge ( Blog/Widgets/FlickrBadge.hs, interpreted )
+[...]
+Ok, modules loaded: Utilities, Blog.Constants, Blog.Model.Entry, [...]
+*Blog.BackEnd.IoOperations> :set prompt "> "
+> :m + Blog.BackEnd.ModelTransformations Blog.FrontEnd.Views Blog.FrontEnd.Presentation
+> m &lt;- boot
+> (s,m') &lt;- ingest_draft m "hello-world.draft"</pre>
+
+<p>The <code>ingest_draft</code> function does the work of adding the
+post parsed from the draft to the internal data structure (some maps
+and lists bundled together) and storing the new post in the content
+directory.  You can find it in
+<code>/tmp/content/hello-world/content.ppp</code>.</p>
+
+<p>For a little more exercise, here's how to render the "all posts"
+view containing the new post:</p>
+
+<pre class="code">> assemble_view (All Nothing) m'
+Loading package xhtml-3000.0.2.1 ... linking ... done.
+"&lt;!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" [...]</pre>
+
+<p>Which is the XHTML that would be displayed in the browser.  As to
+the content of the internal data model for the post we just created:</p>
+
+<pre class="code">> :m + Blog.Model.Entry
+> s
+"hello-world"
+> post_by_permatitle m' s
+Item {internal_id = 0, kind = Post, title = "Hello, World!" [...]</pre>
+
+<p>And that's all there is to it.</p>
+

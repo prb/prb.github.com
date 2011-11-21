@@ -1,0 +1,25 @@
+---
+layout: post
+title: "No Comment for Me? No Checkin for You."
+permalink: no-comment-for-me-no-checkin-for-you.html
+---
+<p>I'm definitely on the more stringent side when it comes to preferences about revision control.  Among other things, if it's worth checking in, it's worth commenting.</p>
+
+<p>Presuming you already know a little bit about CVS commit <a href="https://www.cvshome.org/docs/manual/cvs-1.11.17/cvs_18.html#SEC167">support files</a>, here's a quick CVS hack that forces developers to write meaningful comments:</p>
+
+<pre class="code">#!/bin/bash
+LEN=`cat $1 | tr -d [:space:] | wc -c`
+# loophole for bugfixes and build number management.
+if egrep &quot;(BUILDNUMBER)&quot; $1; then
+  exit 0
+fi
+if [ $LEN -le 40 ]; then
+  echo &quot;Please enter a real comment; $LEN non-whitespace characters is pretty short...&quot;
+  exit 1
+fi
+exit 0</pre>
+
+<p>And then, in the <code>verifymsg</code> file in <code>CVSROOT</code> (with <code>project</code> replaced by the name of the project of interest):</p>
+
+<pre class="code">^project $CVSROOT/CVSROOT/checkCommentLength.sh</pre>
+

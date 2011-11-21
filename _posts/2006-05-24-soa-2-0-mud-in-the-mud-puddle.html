@@ -1,0 +1,24 @@
+---
+layout: post
+title: "SOA 2.0: Mud in the Mud Puddle"
+permalink: soa-2-0-mud-in-the-mud-puddle.html
+categories: [soa, gartner, eda, bpm, hype, wsstar, patterns, architecture]
+---
+<p>As I'm getting caught up on some blogs and industry news, I see that the new version of SOA is out, courtesy of Gartner analyst <a href="http://kiosk.gartner.com/sanfrancisco/main/agenda/bio.cfm?SpeakerID=81">Yefim Natis</a>:</p>
+
+<blockquote><small>[...] With SOA 2.0, an event-driven architecture is deployed in which software modules are related to business components, and alerts and event notifications are featured. The initial SOA concept has not been event-driven but instead has featured direct calls from one piece of software to another in a client-server process, Natis said. SOA implementations have focused on Web services and subordinates to clients, he said. [...]</small></blockquote>
+
+<p>As a dyed-in-the-wool pragmatist and skeptic, I've been kind of <a href="http://mult.ifario.us/articles/2003/12/30/overhype-killed-the-soa-star">grumpy</a> about buzzwords and analyst predictions for a while.  (I <a href="http://www.80smusiclyrics.com/artists/buggles.htm">wish</a> that I'd titled that post "Overhype killed the WS-*", but I'm only that clever retroactively.)  SOA is a style of decomposing a software system, not a vendor or an analyst property.  (Note the lack of a conspicuous "&trade;"...)</p>
+
+<p>A quick search shows that Yefim has had <a href="http://www.gartner.com/DisplayDocument?id=391595">similar views</a> since the <a href="http://en.wikipedia.org/wiki/Paleolithic">Paleolithic</a> (stone tools, yuk yuk...) era of SOA as a buzzword in 2003:</p>
+
+<blockquote><small>A large part of the integration problem requires implementation of long-running offline business processes. Here, event-driven architecture (EDA), not SOA, is the industry best practice. Unlike SOA, EDA is the design vision for long-running asynchronous processes (SOA is best applied to real-time request/reply exchanges). In EDA, a process node posts an event (in SOA, a process node makes a targeted processing request). In EDA, posting an event reflects results of some past processing (in SOA, making a processing request directs future processing). In EDA, the poster of the event is disconnected from the processors of the event, if any (in SOA, the requestor of service knows the service and depends on its existence and availability).</small></blockquote>
+
+<p>If nothing else, this sounds like it confuses SOA with RPC and EDA with publish-subscribe.  Yefim's on the right track that orchestration (effectively, BPM, once you add the trimmings) is a programming model for building applications in an SOA, but I disagree that SOA or even web services as a specialization of SOA is narrowly scoped to client-server interactions.  My minimalist definition of SOA would be:</p>
+
+<dl>
+<dd>A <em>service</em> is an autonomous, opaque software unit that consumes and/or produces well-defined <em>messages</em>.</dd>
+<dd>A <em>service-oriented architecture</em> for a software system is a decomposition into services.</dd>
+</dl>
+
+<p>Interaction patterns, delivery mechanisms, programming idioms, and data protocols are often <em>aspects</em> of an application of SOA but are neither controlling (in the sense of terminology in a contract) nor defining.  That isn't to say that it isn't worthwhile to think about those aspects and approaches.  For a detailed, broadly-scoped, pattern-driven perspective on SOA, compare the <a href="http://orchestrationpatterns.com/node/46">definition</a> (and dozens of accompanying patterns) from <a href="http://micro-workflow.com/">Dragos Manolescu</a> and Boris Lublinsky.  (Among other things, they reference the <a href="http://www.sei.cmu.edu/architecture/definitions.html">repository</a> of definitions of software architecture from the <a href="http://www.sei.cmu.edu">Software Engineering Institute</a> at <a href="http://www.cmu.edu">Carnegie Mellon</a>.)</p>

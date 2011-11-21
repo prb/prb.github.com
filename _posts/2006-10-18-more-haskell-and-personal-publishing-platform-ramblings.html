@@ -1,0 +1,150 @@
+---
+layout: post
+title: "More Haskell and Personal Publishing Platform Ramblings"
+permalink: more-haskell-and-personal-publishing-platform-ramblings.html
+categories: [haskell, stm, blog, curry, functionallanguage, monad, referentialtransparency]
+---
+<p>Herein, part two of <code>n</code>, where I think about some basic design decisions and some actual code gets written.</p>
+
+<h3>From <code>GET</code> to Function Currying</h3>
+
+<p>First up, some thoughts about how to map a request to a response.</p>
+
+<p>A weblog is a list of entries grouped and displayed in different formats according to parameters supplied by client applications, so serving pages is limited to figuring out what format to display (single-entry HTML, multi-entry HTML, Atom) and which entries to include (include/exclude by tag, include/exclude by category, date range, maximum number of entries).  Ideally, I'd like a reader to be able to, e.g., exclude only the posts I make about my kid or include only posts about BPEL and Java.</p>
+
+<p>The simple design is to turn the combination of a URL and parameters into a list of functions that are applied to the list of all entries, loosely:</p>
+
+<pre class="code">(format url) (filter (filters url) entries)</pre>
+
+<p>And that's the whole program, up to details.  In mildly abused Haskell notation:</p>
+
+<pre class="code">format :: URL -> [Entry] -> String
+filters :: URL -> [Entry -> Boolean]</pre>
+
+<p>In Haskell, the notation</p>
+
+<pre class="code">f :: A -> B</pre>
+
+<p>is very much as it is in mathematics with <code>f</code> being a function with domain (things of type) <code>A</code> and codomain (things of type) <code>B</code>.  Unraveling expressions with multiple arrows is accomplished by adding parentheses from the right.  That is,</p>
+
+<pre class="code">f :: A -> B -> C  =  f :: A -> (B -> C)</pre>
+
+<p>is essentially a function from <code>A&times;B</code> to <code>C</code> as in "<code>f</code> is a function that maps (things of type) <code>A</code> to a function that maps (things of type) <code>B</code> to (things of type) <code>C</code>".  So, the function <code>format</code> above maps a <code>URL</code> and a list of <code>Entry</code> to a String.  This is one of the things that I like about Haskell &#8212; <em>a function looks like a function</em>.</p>
+
+<p>Haskell supports <a href="http://en.wikipedia.org/wiki/Currying">currying</a> of functions, which is only appropriate, as the language was named for <a href="http://en.wikipedia.org/wiki/Haskell_Curry">Haskell Curry</a>.  The filters can be implemented by currying arguments onto functions that take two arguments.  For example, consider the functions:</p>
+
+<pre class="code">include_by_tag :: String -> Entry -> Boolean
+include_by_tag s e = s `elem` (tags e)
+
+exclude_by_tag :: String -> Entry -> Boolean
+exclude_by_tag s e = s `notElem` (tags e)</pre>
+
+<p>(<code>tags</code> is a function that returns the list of tags applied to an entry.)  In addition to showing off that Haskell lets you flip back and forth between <a href="http://en.wikipedia.org/wiki/Prefix_notation">prefix</a> notation (<code>foo&#160;1&#160;2</code>) and <a href="http://en.wikipedia.org/wiki/Infix_notation">infix</a> notation (<code>1&#160;`foo`&#160;2</code>), the idea would be to map a query string atom like <code>tag=foo</code> to the function <code>(include_by_tag "foo")</code> or a query string atom like <code>tag=-foo</code> to the function <code>(exclude_by_tag "foo")</code>.</p>
+
+<p>Playing with the concept in <code>ghci</code> is straightforward.
+For example, drop the following two lines of Haskell into a text file
+called <code>curryplus.hs</code>:</p>
+
+<pre class="code">plus :: Integer -> Integer -> Integer
+plus x y = x + y</pre>
+
+<p>And then fire-up <code>ghci</code>:</p>
+
+<pre class="code">$ ghci
+   ___         ___ _
+  / _ \ /\  /\/ __(_)
+ / /_\// /_/ / /  | |      GHC Interactive, version 6.6, for Haskell 98.
+/ /_\\/ __  / /___| |      http://www.haskell.org/ghc/
+\____/\/ /_/\____/|_|      Type :? for help.
+
+Loading package base ... linking ... done.
+Prelude> :load curryplus.hs
+[1 of 1] Compiling Main             ( curryplus.hs, interpreted )
+Ok, modules loaded: Main.
+*Main> :t plus
+plus :: Integer -> Integer -> Integer
+*Main> :t (plus 1)
+(plus 1) :: Integer -> Integer
+*Main> let f = (plus 1)
+*Main> f 2
+3</pre>
+
+<p>The <code>:t</code> command in <code>ghci</code> interrogates the type of the expression passed to it.</p>
+
+<p>Now, where does the list of entries come from?</p>
+
+<h3>Storing Entries &#8212; Database or Filesystem or...?</h3>
+
+<p>Databases are lovely places to store data where reads and writes may overlap, and the filesystem is a good place to store information that either doesn't fit or isn't needed in memory.  For a weblog, read/write contention should be light (frequent reads, infrequent writes), with writes limited to posts and comments, and optimistic concurrency is entirely acceptable.  (It's of no consequence if someone gets slightly stale content.)  However, the total amount of content in my weblog, counting from 2002, is in the hundreds of kilobytes, so there is no reason not to hold the whole thing in memory.</p>
+
+<p>Haskell (and specifically GHC) has a couple of shiny objects that I'm tempted by.  The shiniest one is <em>STM</em> or <em>S</em>oftware <em>T</em>ransactional <em>M</em>emory, and like the three-line quicksort implementation is one of the teasers for Haskell, the four-line <a href="http://java.sun.com/j2se/1.5.0/docs/api/java/util/concurrent/atomic/AtomicInteger.html#getAndIncrement()"><code>AtomicInteger.getAndIncrement()</code></a> implementation is the teaser for STM:</p>
+
+<pre class="code">get_and_increment :: TVar Integer -> IO Integer
+get_and_increment i = atomically ( do j &lt;- readTVar i
+                                      writeTVar i (j+1)
+                                      return j )</pre>
+
+<p>The whitespace in the above definition is <em>critically</em> important, as it tells Haskell that the lines are all part of the <code>do</code>.  I'll come back to the left arrow ("<code>&lt;-</code>") and <code>do</code> notation below.</p>
+
+<p>Experimenting with this in <code>ghci</code> isn't much more complicated than the <code>plus</code> example above.  Put the four lines above in a text file called <code>get_and_inc.hs</code> following the import statement:</p>
+
+<pre class="code">import Control.Concurrent.STM</pre>
+
+<p>And fire up <code>ghci</code> with an extra directive to get it to load the STM package:</p>
+
+<pre class="code">$ ghci -package stm
+   ___         ___ _
+  / _ \ /\  /\/ __(_)
+ / /_\// /_/ / /  | |      GHC Interactive, version 6.6, for Haskell 98.
+/ /_\\/ __  / /___| |      http://www.haskell.org/ghc/
+\____/\/ /_/\____/|_|      Type :? for help.
+
+Loading package base ... linking ... done.
+Loading package stm-2.0 ... linking ... done.
+Prelude> :load get_and_inc.hs
+[1 of 1] Compiling Main             ( get_and_inc.hs, interpreted )
+Ok, modules loaded: Main.
+*Main> x &lt;- atomically ( newTVar 1 )
+*Main> :t x
+x :: TVar Integer
+*Main> get_and_increment x
+1
+*Main> get_and_increment x
+2
+*Main> get_and_increment x
+3</pre>
+
+<p>The original <a href="http://research.microsoft.com/Users/simonpj/papers/stm/stm.pdf">paper</a> on STM is <a href="http://research.microsoft.com/Users/simonpj/papers/stm/index.htm">from</a> Microsoft Research back in 2005.  The follow-on paper <a href="http://research.microsoft.com/Users/simonpj/papers/stm/lock-free-flops06.pdf">Lock Free Data Structures using STM in Haskell</a> is a good read, wherein the authors construct two implementations of <a href="http://java.sun.com/j2se/1.5.0/docs/api/java/util/concurrent/ArrayBlockingQueue.html">ArrayBlockingQueue</a> in Haskell, one using locks and one using STM, and then compare their performance.  (Spoiler: The larger the number of processors, the better STM performs.)</p>
+
+<p>As promised, a quick word about <code>&lt;-</code> and
+<code>do</code>.  Haskell is a purely functional language, and that
+means that it is side-effect-free.  On the one hand it's great to have
+<a
+href="http://en.wikipedia.org/wiki/Referential_transparency">referential
+transparency</a>, since it lets the compiler or runtime VM do things
+like replace common pieces of a complicated expression with values,
+but on the other hand, something imperatively trivial like console
+output <em>is</em> a side-effect.  The elegant workaround is to allow
+a function to return an action as a value, where the action is to be
+performed by an external observer at some point.  The construct is
+called a <a
+href="http://en.wikipedia.org/wiki/Monads_in_functional_programming">monad</a>,
+and <code>&lt;-</code> and <code>do</code> are some of the notation
+that comes with it.  (Defining the nature of the action and the
+observer is the art of constructing a monad.)  The
+"<code>do</code>" chains up actions, and the
+"<code>&lt;-</code>" captures a value created by an action.  Yet
+<a
+href="http://research.microsoft.com/Users/simonpj/Papers/marktoberdorf/mark.pdf">another
+good paper</a> from Microsoft Research has a thorough tutorial on
+monads in Haskell.</p>
+
+<p>This brings me to the design for storing and accessing the entries:</p>
+
+<ul>
+<li>Use a single multi-threaded FastCGI handler to serve all requests.</li>
+<li>Maintain an in-memory copy of all content (entries and approved comments), with access and updates managed via STM.</li>
+<li>Store entry and approved comment content as separate files on disk, to be loaded at start-up time and written when an entry is posted or comment approved.</li>
+</ul>
+
+<p>Data structures and a lo-fi approach to outputting Atom are up next.</p>

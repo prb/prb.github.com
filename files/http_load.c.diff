@@ -1,0 +1,8 @@
+1697c1697
+< 			       stderr, "%s: checksum wrong (HTTP %i)\n", urls[url_num].url_str, connections[cnum].http_status );
+---
+> 		    stderr, "%s: checksum wrong\n", urls[url_num].url_str );
+1714c1714
+< 			       stderr, "%s: byte count wrong (HTTP %i)\n", urls[url_num].url_str, connections[cnum].http_status );
+---
+> 		    stderr, "%s: byte count wrong\n", urls[url_num].url_str );

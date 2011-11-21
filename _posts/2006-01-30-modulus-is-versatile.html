@@ -1,0 +1,12 @@
+---
+layout: post
+title: "Modulus is Versatile"
+permalink: modulus-is-versatile.html
+categories: [java, tricks]
+---
+<p>I recently came across a post to a mailing list that asked how to truncate a Java <code>double</code> to two decimal place.  The usual answers, either using a formatter and parser or multiplying by <code>100</code> and using <code>floor()</code> and then dividing by <code>100</code>, will work, but there's an even simpler one:</p>
+
+<pre class="code">double x = 12345.6789d;
+double y = x - (x % 0.01);</pre>
+
+<p>As expected, <code>y</code> is <code>12345.67</code>.</p>

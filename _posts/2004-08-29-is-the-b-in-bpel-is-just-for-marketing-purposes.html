@@ -1,0 +1,15 @@
+---
+layout: post
+title: "Is the \"B\" in BPEL is Just for Marketing Purposes?"
+permalink: is-the-b-in-bpel-is-just-for-marketing-purposes.html
+categories: [bpel]
+---
+<p>For those who have been living under a rock, BPEL is the <strong>B</strong>usiness <strong>P</strong>rocess <strong>E</strong>xecution <strong>L</strong>anguage, a forthcoming <a href="http://www.oasis-open.org/committees/tc_home.php?wg_abbrev=wsbpel">standard</a> from OASIS.</p>
+
+<p>The "B" in BPEL is very much like the "S" and the "O" in <a href="http://www.w3.org/TR/soap/">SOAP</a>.  While it may be called the <strong>S</strong>imple <strong>O</strong>bject <strong>A</strong>ccess <strong>P</strong>rotocol, SOAP is neither simple nor does it have anything to do with objects.  Similarly, BPEL has nothing to do with business.  BPEL is a mechanism for controlling the messages passed between a set of web services, and any business significance that BPEL process, those messages, and those services may have is orthogonal and ancillary to BPEL.  That isn't to say that a BPEL <code>&lt;process&gt;</code> can't be used to model a business process.  <em>Au contraire</em>, this is one of the primary use cases and motivations for BPEL, but BPEL is oriented in terms of services, messages, and operations.  (You can compare some of JJ Dubray's <a href="http://www.ebpml.org/site_updates.htm#60">remarks</a> on this subject.)</p>
+
+<p>This brings up an interesting candidate for a service-oriented design criterion:</p>
+
+<blockquote>The extent to which the semantics of a BPEL process resemble the semantics of the business process that it represents is a measure of the quality of the underlying service-oriented model.</blockquote>
+
+<p>Contemplation?  Confirmation?  Condemnation?</p>

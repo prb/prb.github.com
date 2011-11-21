@@ -1,0 +1,225 @@
+---
+layout: post
+title: "Tuppence Tour of Haskell Concurrency Constructs"
+permalink: tuppence-tour-of-haskell-concurrency-constructs.html
+categories: [haskell, concurrency, stm]
+---
+<p>One of the little widgets that I need for an experiment is a sequence number generator, and it's a good way to get a <a href="http://en.wikipedia.org/wiki/British_two_pence_coin">tuppence</a> (i.e., less than half a <a href="http://www.usingenglish.com/reference/idioms/nickel+tour.html">nickel</a>) tour of Haskell's concurrency constructs with a little lesson on laziness thrown in for spice.</p>
+
+<h3>Requirements</h3>
+
+<p>The generator should produce unique <code>Int</code> values on demand and support concurrent access, and I want to try out a couple of methods, one that uses GHC's baseline concurrency capabilities and one that uses STM.  (Also, I'd like a better feel for the concepts in practice, so this makes a good exercise!)</p>
+
+<h3>Take One: Asynchronous Channels</h3>
+
+<p>The base GHC concurrency packages (<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent.html"><code>Control.Concurrent</code></a>
+and its descendents) include a great set of buildings blocks:
+one-place buffers (<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent-MVar.html"><code>MVar</code></a>),
+asynchronous channels (<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent-Chan.html"><code>Chan</code></a>)
+that can be <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent-Chan.html#v%3AdupChan">combined</a>
+into one-to-many broadcast channels, and quantity semaphores (<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent-QSem.html"><code>QSem</code></a>
+and <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent-QSemN.html"><code>QSemN</code></a>).</p>
+
+<p>The design I have in mind uses two asynchronous channels, one for
+requests and one for responses.  All clients of the generator receive
+responses on the one channel, which means that one might get the
+number that another one requested, but that's no big deal.</p>
+
+<p>First, one data structure for the requests and one for the client
+view of the generator:</p>
+
+<pre class="code">import Control.Concurrent ( ThreadId, forkIO )
+import Control.Concurrent.Chan ( Chan, newChan, writeChan, readChan )
+
+data Request = Get
+             | Set { initial_value :: Int }
+             | Die
+
+data Generator = Generator { thread_id :: ThreadId,
+                             request_channel :: Chan Request, 
+                             response_channel :: Chan Int }</pre>
+
+
+<p>Then some functions (whose signatures I'll match with the STM
+version below) to manipulate the generator:</p>
+
+<pre class="code">reset :: Generator -&gt; Int -&gt; IO ()
+reset g i = writeChan (request_channel g) (Set i)
+
+get_next :: Generator -&gt; IO Int
+get_next g = (writeChan (request_channel g) (Get)) &gt;&gt; 
+             readChan (response_channel g)
+
+stop :: Generator -> IO ()
+stop g = writeChan (request_channel g) Die</pre>
+
+<p>Each client function is implemented in terms of sending the request
+data structure to the generator on the <code>request_channel</code>
+and then, in the case of the <code>Get</code> operation, blocking to
+read a value from the <code>response_channel</code>.</p>
+
+<p>Finally, the request-handling event loop in a separate lightweight
+thread:</p>
+
+<pre class="code">new_counter :: IO Generator
+new_counter = do { in_chan &lt;- newChan
+                 ; out_chan &lt;- newChan
+                 ; tid &lt;- forkIO $ loop in_chan out_chan 0
+                 ; return $ Generator tid in_chan out_chan }
+
+loop :: Chan Request -> Chan Int -> Int -> IO ()
+loop ic oc i = do { req &lt;- readChan ic
+                  ; case req of 
+                      Die -> return ()
+                      (Set n) ->
+                          (loop ic oc n)
+                      Get ->
+                          do { writeChan oc i
+                             ; loop ic oc $! (i+1) } }</pre>
+
+<p>A similar pattern (request channel, response channel or one-place buffer (<code>MVar</code>) either pre-set or passed with the request, tail-recursive event loop) works for a wide variety of problems and presents a reasonable API for clients.</p>
+
+<p>The single-threadedness of the <code>loop</code> makes it intuitively easy to conclude that it does the right thing (returns unique values to clients), but it's easy enough to check with some experiments in <code>ghci</code>:</p>
+
+<pre class="code">> :m + Control.Concurrent
+> g &lt;- new_counter
+> get_next g
+0
+> forkIO $ sequence_ $ replicate 10000000 (get_next g)
+ThreadId 111
+> forkIO $ sequence_ $ replicate 10000000 (get_next g)
+ThreadId 112
+> forkIO $ sequence_ $ replicate 10000000 (get_next g)
+ThreadId 113
+[... wait a while ...]
+> get_next g
+300000001</pre>
+
+<p>Which is the right answer.  Another experiment will show how fair the scheduler is in terms of multiple client threads:</p>
+
+<pre class="code">> g &lt;- new_counter
+> :set -fno-print-bind-result -fglasgow-exts</pre>
+
+<p>By the way, <code>[TAB]</code>-completion in <code>ghci</code> means that the above can be obtained by typing:</p>
+
+<pre class="code">:set -fno-pr[TAB] -fgl[TAB]</pre>
+
+<p>The <code>-fno-print-bind-result</code> prevents <code>ghci</code> from spoiling our attempts to be lazy by printing (and thus evaluating), and the <code>-fglasgow-exts</code> lets us use a type specification to specify what kind of channel we're creating.  (Normally, the compiler would figure it out from context, but that won't work in <code>ghci</code>.)</p>
+
+<pre class="code">> tid::(Chan (Int,Int)) &lt;- newChan
+> mapM_ (\n -> (forkIO $ sequence_ $ replicate 1000 (get_next g >>= (writeChan tid).((,) n)))) [1..10]</pre>
+
+<p>The last expression looks dense, but it breaks down simply.  In
+plain English, fork 10 threads numbered <code>1</code> through
+<code>10</code>, and on each thread, do the following 1000 times: get
+a sequence number from the generator and then send the ordered pair of
+the threads number and the sequence number on the <code>tid</code>
+channel.  (The <code>(,)</code> function makes ordered pairs out of
+its arguments.)  To inspect the contents of the channel once the
+threads are done:</p>
+
+<pre class="code">> x &lt;- getChanContents tid</pre>
+
+<p>(Without the <code>-fno-print-bind-result</code> above, this would
+run forever.)  And now a couple of quick checks:</p>
+
+<pre class="code">> :m + List
+> let y = take 10000 x
+> length $ nub $ map snd y
+10000
+> [ length $ filter (((==) j).fst) y | j &lt;- [1..10] ]
+[1000,1000,1000,1000,1000,1000,1000,1000,1000,1000]
+> let w = [ length $ nub (take 10 (drop k (map fst y))) | k &lt;- [0..9990] ]
+> [ length $ filter ((==) j) w | j &lt;- [1..10] ]
+[0,0,0,0,0,0,1,1,522,9467]</pre>
+
+<p>So, most of the time, in 10 turns, 10 client threads get a
+chance.</p>
+
+<h4>A Quick Word About Laziness</h4>
+
+<p>The <code>$!</code> is a piece of Haskell magic that ensures that
+the value on the right is evaluated.  Without it, this happens:</p>
+
+<pre class="code">> g &lt;- new_counter
+> get_next g
+0
+> sequence_ $ replicate 100000000 (get_next g)
+> get_next g
+*** Exception: stack overflow</pre>
+
+<p>The reason lies in Haskell's laziness.  At the time that the second
+<code>get_next</code> is evaluated, there are 100,000,000
+<code>(i+1)</code> queued-up and waiting to be evaluated because no
+one ever actually consumed the values passed back on the response
+channel.  This is just the way that Haskell works: You can tell the
+runtime about a ridiculous computation, but it won't complain until
+you ask for the result.  The <code>$!</code> ensures that the
+<code>(i+1)</code> value is evaluated each time <code>Get</code> is
+performed.</p>
+
+<h3>Take Two: <code>TVar</code></h3>
+
+<p>Haskell's STM (<a
+href="http://en.wikipedia.org/wiki/Software_transactional_memory">software
+transactional memory</a>; <a
+href="http://research.microsoft.com/~simonpj/papers/stm/index.htm">read/watch</a>
+Simon Peyton Jones on the subject) implementation provides another set
+of building blocks in the form of atomically mutable cells (<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/stm/Control-Concurrent-STM-TVar.html"><code>TVar</code></a>),
+asynchronous channels (<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/stm/Control-Concurrent-STM-TChan.html"><code>TChan</code></a>),
+one-place buffers (<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/stm/Control-Concurrent-STM-TMVar.html"><code>TMVar</code></a>),
+and arrays (<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/stm/Control-Concurrent-STM-TArray.html"><code>TArray</code></a>).</p>
+
+<p>The sequence generator implementation with the same API but using a
+<code>TVar</code> to hold the current value is shorter and simpler (no
+backing thread) than the one above that uses channels:</p>
+
+<pre class="code">import Control.Concurrent.STM
+import Control.Concurrent.STM.TVar
+import Control.Monad
+
+data Generator = Generator { counter :: TVar Int }
+
+new_counter :: Int -> IO Generator
+new_counter i = (atomically $ newTVar i) >>= (return . Generator)
+
+get_next :: Generator -> IO Int
+get_next g = atomically $ do { n &lt;- readTVar $ counter g
+                             ; (writeTVar (counter g)) $! (n+1)
+                             ; return n }
+
+reset :: Generator -> Int -> IO ()
+reset g n = atomically $ writeTVar (counter g) n</pre>
+
+<p>Note the <code>$!</code> that appears in <code>get_next</code>; it
+is there for the same reason as it appears in the <code>Chan</code>
+version.</p>
+
+<p>The same set of basic verifications as above ends with:</p>
+
+<pre class="code">> [ length $ filter ((==) j) w | j &lt;- [1..10] ]
+[9901,90,0,0,0,0,0,0,0,0]</pre>
+
+<p>Or, the 10 threads took blocks of 1000 numbers from the sequence because the scheduler had no reason to switch.  For a slightly different spawning of clients with a <code>yield</code> added, we get more regular results:</p>
+
+<pre class="code">> mapM_ (\n -> (forkIO $ sequence_ $ replicate 1000 (get_next g >>= (writeChan tid).((,) n) >> yield))) [1..10]
+[... same steps ...]
+[0,0,0,0,0,0,0,0,0,9991]
+> (map fst y) == (concat $ replicate 1000 [1..10])
+True</pre>
+
+<h3>Conclusions</h3>
+
+<p>The STM version is probably the one that I'll use, but I also need
+some more complicated components where the channel-based design will
+work well.</p>

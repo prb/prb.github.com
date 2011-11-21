@@ -1,0 +1,53 @@
+---
+layout: post
+title: "Getting <code>bash</code> Completion Magic on OS X"
+permalink: getting-bash-completion-magic-on-os-x.html
+categories: [bash, osx, darcs, cabal, macports, bash-completion]
+---
+
+<p>One of the many nifty features of <code>bash</code> is that it
+provides context-sensitive completion, but for some reason this
+capability isn't part of the <code>bash</code> that ships with Mac OS
+X, at least as of 10.5.3, which is what I'm presently using.</p>
+
+<p>To rectify the oversight, first install the
+<code>bash_completion</code> <a href="http://trac.macports.org/browser/trunk/dports/sysutils/bash-completion/Portfile">port</a> via <a href="http://www.macports.org">MacPorts</a>:</p>
+
+<pre class="code">$ sudo port install bash-completion</pre>
+
+<p>And then modify your <code>~/.profile</code> as directed, e.g., by adding:</p>
+
+<pre class="code">if [ -f /opt/local/etc/bash_completion ]; then
+    . /opt/local/etc/bash_completion
+fi</pre>
+
+<p>To load your own local collection of completion hooks, create the
+directory <code>~/.bash_completion.d</code> and then put the following
+in <code>~/.bash_completion</code> (essentially cut/pasted out of
+<code>/opt/local/etc/bash_completion</code>):</p>
+
+<pre class="code">if [ -d $USER_BASH_COMPLETION_DIR -a -r $USER_BASH_COMPLETION_DIR -a \
+     -x $USER_BASH_COMPLETION_DIR ]; then
+        for i in $USER_BASH_COMPLETION_DIR/*; do
+                [[ ${i##*/} != @(*~|*.bak|*.swp|\#*\#|*.dpkg*|.rpm*) ]] &amp;&amp;
+                        [ \( -f $i -o -h $i \) -a -r $i ] &amp;&amp; . $i
+        done
+fi
+unset i</pre>
+
+<p>Next, above the other block added to <code>~/.profile</code>, add:</p>
+
+<pre class="code">export USER_BASH_COMPLETION_DIR=~/.bash_completion.d</pre>
+
+<p>As for the contents of <code>.bash_completion.d</code>, I put the
+completion files supplied with <a
+href="http://www.darcs.net">darcs</a> and <a
+href="http://hackage.haskell.org/trac/hackage/wiki/CabalInstall">cabal-install</a>
+there, so in addition to the usual niceties like completion of paths
+on remote servers (e.g., for <code>scp</code>), I also get convenient
+completion behavior at the commandline, e.g., with
+<code>cabal</code>:</p>
+
+<pre class="code">$ cabal install hsc[TAB]
+hsc2hs hsc3 hsclock hscolour hscurses</pre>
+

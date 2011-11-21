@@ -1,0 +1,43 @@
+---
+layout: post
+title: "Splitting XML Well with XSLT 2"
+permalink: splitting-xml-well-with-xslt-2.html
+categories: [xml, xslt, xslt2, split]
+---
+
+<p>I recently had the need to split up a result set from a <a
+href="http://lucene.apache.org/solr/">Solr</a> query into a collection
+of smaller groups of <code>add</code> requests for POSTing into a
+different core.
+There are some ways to make the split work with text processing tools
+(<code>split</code> and friends), but it's always an open question
+whether an ad hoc approach will trip over some markup &#8212; it's
+just better to use XML tooling.  By no coincidence (based on features missing from 
+<a href="http://www.w3.org/TR/xslt"></a>), <a href="http://www.w3.org/TR/xslt20/">XSLT&#160;2</a> makes it
+easy to do the right thing.</p>
+
+<p>First up is grouping in chunks of 2000 records:</p>
+
+<pre class="code">&lt;xsl:for-each-group select="/response/result/doc"
+                    group-by="round(position() div 2000)">
+...
+&lt;/xsl:for-each-group></pre>
+
+<p>Outputting each hunk to a file named for the index of the
+group is also a one-liner:</p>
+
+<pre class="code">&lt;xsl:result-document href="{current-grouping-key()}_out.xml">
+  &lt;add>
+    &lt;xsl:for-each select="current-group()">
+      &lt;doc>
+        &lt;xsl:apply-templates />
+      &lt;/doc>
+    &lt;/xsl:for-each>
+  &lt;/add>
+&lt;/xsl:result-document></pre>
+
+<p>And that's it.  The only trick is choosing an XSLT&#160; processor,
+and the superlative <a
+href="http://saxon.sourceforge.net/">Saxon</a> (from <a
+href="http://www.saxonica.com/">Saxonica</a>) is my default choice.</p>
+

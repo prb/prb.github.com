@@ -1,0 +1,13 @@
+---
+layout: post
+title: "OpenID for Me"
+permalink: openid-for-me.html
+categories: [openid]
+---
+<p>Thanks to <a href="http://www.intertwingly.net/blog/">Sam</a>'s <a href="http://www.intertwingly.net/blog/2007/01/03/OpenID-for-non-SuperUsers">post</a> on a short path to getting a personal install of <a href="http://openid.net/">OpenID</a> working, I got things working and gave them a quick whirl with both the <a href="http://www.openidenabled.com/">OpenID Enabled</a> <a href="http://www.openidenabled.com/resources/openid-test/checkup">checker</a> and a WordPress <a href="http://openid.verselogic.net/?p=1#comments">scratchpad</a>.  All-in-all it was almost too easy; the most troublesome thing in the whole process was switching Apache2's execution module so that I could <tt>apt-get</tt> the PHP module (which depends on thread safety).</p>
+
+<p>My only objection is that the identification URI <a href="http://openid.net/specs/openid-authentication-1_1.html#anchor31">is supposed to</a> return specific content in response to a <tt>GET</tt> with no parameters:</p>
+
+<blockquote>If it's a GET request with no arguments, the Identity Provider SHALL show a 200 text/html error saying "This is an OpenID server endpoint. For more information, see http://openid.net/".</blockquote>
+
+<p>Specifically because the URI represents my identity, I'd like to have control over the human-facing response that the URI generates when requested.  The <tt>openid.delegate</tt> parameter works around this issue by allowing me to delegate from <tt>http://mult.ifario.us/id/</tt> to <tt>http://mult.ifario.us</tt>, but I'm not sure what the above restriction buys in terms of either security or utility.</p>

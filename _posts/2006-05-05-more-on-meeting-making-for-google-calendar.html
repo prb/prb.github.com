@@ -1,0 +1,110 @@
+---
+layout: post
+title: "More on Meeting-Making for Google Calendar"
+permalink: more-on-meeting-making-for-google-calendar.html
+categories: [ruby, atom, googlecalendar]
+---
+<p>After having <a href="http://mult.ifario.us/articles/2006/04/15/some-homebrew-sauce-for-google-calendar">posted</a> about how it would be possible to take the Atom feeds from Google Calendar and make a collaborative appointment scheduler (meeting time picker for multiple people), I decided to give it a shot using the Atom parsing <a href="http://rubyforge.org/projects/atom/">library</a> for Ruby from <a href="http://split-s.blogspot.com/">Martin Traverso</a> and <a href="http://kasparov.skife.org/blog/">Brian McCallister</a>.</p>
+
+<p>The Atom library is slick, and doing some simple extensions to the basic binding to support the Google Data <a href="http://code.google.com/apis/gdata/common-elements.html">elements</a> is straightforward.  For example, here's a Ruby snippet that will read the start time, end time, and reminder settings from the feed:</p>
+
+<pre class="code">require 'atom'
+require 'xmlmapping'
+require 'time'
+require 'date'
+require 'net/http'
+require 'uri'
+
+module GoogleData
+
+  NAMESPACE = 'http://schemas.google.com/g/2005'
+  
+  def GoogleData.int_or_nil(s)
+    if s.nil?
+      nil
+    else
+      s.to_i
+    end 
+  end
+  
+  def GoogleData.date_or_datetime(s)
+    if s.length == 10
+      Date.parse(s)
+    else
+      Time.iso8601(s)
+    end  
+  end
+  
+  class Reminder
+    include XMLMapping
+    
+    namespace NAMESPACE
+    
+    has_attribute :absolute_time, :name => 'absoluteTime',
+      :transform => lambda { |t| Time.iso8601(t) }
+    has_attribute :days, :name => 'days',
+      :transform => lambda { |s| GoogleData.int_or_nil(s) }
+    has_attribute :hours, :name => 'hours',
+      :transform => lambda { |s| GoogleData.int_or_nil(s) }
+    has_attribute :minutes, :name => 'minutes',
+      :transform => lambda { |s| GoogleData.int_or_nil(s) }
+  end
+  
+  class When 
+    include XMLMapping
+
+    namespace NAMESPACE
+    
+    # The following little hack is required because the
+    # datatype switches between xs:date for all-day
+    # appointments and xs:dateTime for non-all-day
+    # appoinments.
+
+    has_attribute :start_time, :name => 'startTime',
+      :transform => lambda { |s| GoogleData.date_or_datetime(s) }
+    has_attribute :end_time, :name => 'endTime',
+      :transform => lambda { |s| GoogleData.date_or_datetime(s) }
+    has_attribute :valueString
+    
+    has_many :reminders, :name => 'reminder', :type => Reminder
+  end
+
+  class Entry &lt; Atom::Entry
+    namespace NAMESPACE
+    has_one :when, :name => 'when', :type => When
+  end
+  
+  class Feed &lt; Atom::Feed
+    has_many :entries, :name => 'entry', :type => Entry
+  end</pre>
+
+<p>The two key tricks above are extending <tt>Atom::Feed</tt> and
+<tt>Atom::Entry</tt> to add explicit handling for the extension
+elements that we're after.  (Without any changes, <tt>Atom::Entry</tt>
+does capture an array of extension elements, but I'd prefer to work
+with objects.)  Similar approaches can be applied to the other
+"kinds" of things in the feed.  As an editorial comment, I'm
+lukewarm about the datatype of an attribute value determining its
+semantics; normally the semantics would determine the datatype.</p>
+
+<p>To grab the data from the Atom feed of the calendar:</p>
+
+<pre class="code">response = Net::HTTP.get_response(URI.parse(GCAL_FULL_URL))
+
+# TODO: Limit the number of redirects to follow.
+# TODO: Gracefully handle other non-200's here, too.
+while response.kind_of? Net::HTTPRedirection
+  response = Net::HTTP.get_response(URI.parse(response['location']))
+end
+
+feed = GoogleData::Feed.new(response.body)
+
+feed.entries.each { |event|
+  puts '---'
+  puts event.title
+  puts event.when.start_time.to_s + ' -- ' + event.when.end_time.to_s
+}</pre>
+
+<p>Back to the <a href="http://mult.ifario.us/articles/2006/04/15/less-vanilla-and-more-sauce-please">original goal</a> of building a "meeting maker" for Google Calendar based on the Atom feeds for participants' calendars, the additional work to properly handle <a href="http://code.google.com/apis/gdata/common-elements.html#gdRecurrence"><tt>recurrence</tt></a> and <a href="http://code.google.com/apis/gdata/common-elements.html#gdRecurrenceException"><tt>recurrenceException</tt></a> makes the problem look quite a bit more complicated (and interesting).  (Fortunately, there does appear to be an <a href="http://www.ietf.org/rfc/rfc2445.txt">iCalendar</a> (RFC2445) library <a href="http://icalendar.rubyforge.org/">available</a> as well...)  So this is turning into more than a one-evening project.</p>
+
+<p>With the added complexity of supporting recurring events and exceptions, there is probably a tidy approach that augments the list merge I suggested before with generators and sequence comprehensions for the recurring events &#8212; just enumerate possible meeting times from the complement of the merged list of "busy" times for non-recurring meetings and test for overlaps in the union (i.e., "or") of the sequences for each participant.  (If I recall correctly, the meeting makers in the usual <a href="http://www.microsoft.com/exchange">Exchange</a> clients don't support optimal scheduling of recurring meetings, so that would be a nice feature as well, i.e., schedule the recurring meeting at the time with the fewest conflicts or at least minimize the conflicts for some subset of the participants.)</p>

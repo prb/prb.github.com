@@ -1,0 +1,30 @@
+---
+layout: post
+title: "Sure, it runs like a top.  How does it idle?"
+permalink: sure-it-runs-like-a-top-how-does-it-idle.html
+categories: [performance, testing, concurrency, java]
+---
+
+<p>A couple of weeks back, I wrote a simple but well-instrumented Java
+framework to handle <a
+href="http://www.eecs.harvard.edu/~mdw/proj/seda/">SEDA</a>-like use
+cases (thread pools linked by queues) for a consulting customer.  The
+<tt>java.util.concurrent</tt> package and friends makes this sort of
+thing much easier than it used to be, and it was surprisingly easy to
+crank it out.  As a smoke test, I set up a torture test for a simple
+configuration and left it running over night, and it appeared solid
+&#8212; no memory or thread leaks, no lock-ups.</p>
+
+<p>Someone working on a different problem needed something similar and
+took the framework for a quick test drive, ending up with an out of
+memory error after a night of doing nothing!  It turns out that there
+was a <a
+href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6236036">bug</a>
+that meant that the <a
+href="http://java.sun.com/j2se/1.5.0/docs/api/java/util/concurrent/LinkedBlockingQueue.html#poll(long,%20java.util.concurrent.TimeUnit)"><tt>poll(long,TimeUnit)</tt></a>
+on an empty <a
+href="http://java.sun.com/j2se/1.5.0/docs/api/java/util/concurrent/LinkedBlockingQueue.html"><tt>LinkedBlockingQueue</tt></a>
+leaks, and I'd never run across it in testing because I hadn't tested
+what happens when the system has no load for an extended period.</p>
+
+<p>The lesson is that no load doesn't mean that the system is actually doing nothing, and it's an important scenario to add to a test plan.</p>

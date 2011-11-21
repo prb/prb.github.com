@@ -1,0 +1,15 @@
+---
+layout: post
+title: "Cure for irbarrhea"
+permalink: cure-for-irbarrhea.html
+categories: [ruby, irb, typo, activerecord]
+---
+<p>I've been working with the <a href="http://api.rubyonrails.com/classes/ActiveRecord/Base.html">ActiveRecord</a> model for my <a href="http://trac.typosphere.org/">typo</a> installation using <tt>irb</tt> (via <tt>scripts/console</tt>), but some expressions were producing a little too much output for convenience, e.g.:</p>
+
+<pre class="code">Article.find_all.collect { |a| a.permalink }</pre>
+
+<p>Fortunately, there is a convenient <a href="http://www.ruby-forum.com/topic/58754#50446">configuration property</a> that does the trick by suppressing the output of evaluated expressions:</p>
+
+<pre class="code">conf.return_format = ""</pre>
+
+<p>After which, what you get is what you <tt>puts</tt>.</p>

@@ -1,0 +1,16 @@
+---
+layout: post
+title: "Temp File Annoyance in Tomcat"
+permalink: temp-file-annoyance-in-tomcat.html
+---
+<p>I came across a <code>FileNotFoundException</code> inside a <code>File.createTempFile()</code> call in an otherwise thoroughly tested piece of code running in a fresh Tomcat (5.0.19) today, and I had to scratch my head for a moment.  It turned out that the file that did not exist was the directory specified by the <code>java.io.tmpdir</code> property!  The setting was Tomcat-specific but not created explicitly by Tomcat.  (Baaaaad kitty...)  I arrived at and tested this conclusion without the use of a debugger, but the only way to catch it otherwise would have been to actually step through the innards of the method in the <code>File</code> class.</p>
+
+<p>I'm surely not the first person to stumble on this one, but I didn't find it in the Tomcat changelog or bug database.  So I filed a <a href="http://nagoya.apache.org/bugzilla/show_bug.cgi?id=31725">bug report</a>.</p>
+
+<hr />
+
+<p><strong>Update:</strong>  R&eacute;my Maucherat pointed out that Tomcat's temporary directory <em>is</em> there when the distribution is unpacked, so while I can affirm that the code runs outside of Tomcat without deleting <code>/tmp</code>, <code>$CATALINA_HOME/temp</code> is getting deleted at some point.</p>
+
+<p>Thus, this is more of a generic troubleshooting consideration than something specific to Tomcat:</p>
+
+<blockquote>The JVM makes no guarantees that the directory specified by <code>java.io.tmpdir</code> exists, and a <code>FileNotFoundException</code> inside a <code>File.createTempFile()</code> call may be attributable to a missing temporary working directory.</blockquote>

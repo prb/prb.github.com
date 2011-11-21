@@ -1,0 +1,161 @@
+---
+layout: post
+title: "Haskell, del.icio.us, and JSON"
+permalink: haskell-del-icio-us-and-json.html
+categories: [haskell, json, del.icio.us, rfc4627, http, utf8]
+---
+
+<p>I'd like to add both a sidebar with my bookmarks and some per-entry
+chrome for posts bookmarked on <a
+href="http://del.icio.us">del.icio.us</a>, but I don't want to use
+client-side Javascript to do it.  The alternative is to pull, cache,
+and manage the data on the server side.  As a prototype, I whipped
+up a simple Haskell program that uses the del.icio.us JSON APIs (for
+<a href="http://del.icio.us/help/json/posts">posts</a> and for <a
+href="http://del.icio.us/help/json/url">URLs</a>), and it contained a
+couple of surprising detours.</p>
+
+<h3>Some Haskell</h3>
+
+<p>First up, some Haskell.  After going shopping on <a
+href="http://hackage.haskell.org/packages/hackage.html">Hackage</a>, I
+installed <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/HTTP"><code>Network.HTTP</code></a>,
+Thomas DuBuisson's <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/pureMD5">pureMD5</a>
+package, and the JSON package from <a
+href="http://www.tom.sfc.keio.ac.jp/~sakai">Masahiro Sakai</a> and Jun
+Mukai (cabalized version is <a
+href="http://datapr0n.com/repos/perpubplat/json/">here</a>).  Like all
+code that builds on a decent set of libraries, the Haskell code to hit
+del.icio.us is straightforward; full source is <a
+href="http://mult.ifario.us/files/delicious_client.hs">here</a>, so
+I'll just post some fragments below to give a flavor of the code.</p>
+
+<p>Create a structure to hold the data:</p>
+
+<pre class="code">data DeliciousBookmark = DeliciousBookmark { bookmark_url :: String
+                                           , description :: String
+                                           , tags :: [String] }
+                         deriving ( Show, Eq, Ord )</pre>
+
+<p>Build the request:</p>
+
+<pre class="code">bookmarks_fragment :: String
+bookmarks_fragment = "http://del.icio.us/feeds/json/"
+
+request_for_bookmarks :: String -> Request
+request_for_bookmarks user = Request ( fromJust . parseURI $
+                                       bookmarks_fragment ++ user ++ "?raw" )
+                             GET [] ""</pre>
+<p>Send it:</p>
+
+<pre class="code">fetch_bookmarks :: String -> IO [DeliciousBookmark]
+fetch_bookmarks user = do { res &lt;- simpleHTTP . request_for_bookmarks $ user
+                          ; case res of
+                              Right (Response (2,0,0) _ _ body) ->
+                                  return $ process_bookmarks_body body
+                          }</pre>
+
+<p>And then parse and walk through the response body:</p>
+
+<pre class="code">parse_crufty_json :: String -> J.Value
+parse_crufty_json = parse_json . unescape . utf8_decode
+    where
+      parse_json = \s -> case (parse J.json "" s) of
+                           Left err -> error . show $ err
+                           Right v -> v
+
+process_bookmarks_body :: String -> [DeliciousBookmark]
+process_bookmarks_body body =
+    case parse_crufty_json body of
+      J.Array a ->
+          map (process_bookmark . uno) a
+
+process_bookmark :: M.Map String J.Value -> DeliciousBookmark
+process_bookmark m =
+    DeliciousBookmark { bookmark_url = uns $ M.findWithDefault blank "u" m
+                      , description = uns $ M.findWithDefault blank "d" m 
+                      , tags = map uns $ una $ M.findWithDefault empty_array "t" m }
+
+blank = J.String ""
+empty_array = J.Array []
+uno (J.Object o) = o
+uns (J.String s) = s</pre>
+
+<p>And that's all there is to it, except that &#8212; as might be expected from the <code>parse_crufty_json</code> function &#8212; there were a few things
+that didn't work on the first pass.</p>
+
+<h3>Bytes and Characters</h3>
+
+<p>The first wrinkle I ran into with the simple del.icio.us client
+occurred in <code>process_bookmarks_body</code>.  The Haskell
+<code>String</code> that comes from the HTTP response structure is
+just a straight conversion of the response body from bytes to
+character ordinals.  This is all well and good if the body is encoded
+in <a href="http://en.wikipedia.org/wiki/ISO_8859-1">ISO-8859-1</a>,
+but it's fraught with peril otherwise.  The del.icio.us service sends
+back <a href="http://en.wikipedia.org/wiki/UTF-8">UTF-8</a> (and
+ignores an <code>Accept-Charset</code> <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.2">header</a>
+instead either returning a correctly encoded response or a
+<code>406</code> response code), so any interesting characters will
+cause problems.  In this case, what should be <code>Solutoire.com
+\8250 Plotr</code> is coming through as <code>Solutoire.com
+\226\128\186 Plotr</code>.  Writing a decoder is no big deal and an
+opportunity to play a quick round of <a
+href="http://en.wikipedia.org/wiki/Perl#Perl_golf">golf</a>.</p>
+
+<p>In terms of making HTTP in Haskell better, there was apparently a
+Google SoC project <a
+href="http://code.google.com/soc/2007/haskell/appinfo.html?csaid=D4DEE221DAC4E810">proposed</a>
+to integrate <a href="http://curl.haxx.se/">cURL</a> via FFI and
+Haskell's <code>ByteString</code> API, but it doesn't look like
+anything's come of it.</p>
+
+<h3>RFC-compliant JSON versus Works For Me in JavaScript</h3>
+
+<p>The second wrinkle with the simple del.icio.us client is more
+pernicious.  After I resolved the string encoding issues, I started
+getting errors of the form:</p>
+
+<pre class="code">parse error at (line 1, column 1552):
+unexpected "'"
+expecting "\"", "\\", "/", "b", "f", "n", "r", "t" or "u"</pre>
+
+<p>And sure enough, on inspection, there's an escaped apostrophe
+lurking in the JSON.  This probably wouldn't bother a client who
+simply evaluated the JSON as literal JavaScript (which seems to be the
+intent of the API), but it's not legal JSON and the parser correctly
+signals an error.</p>
+
+<p>The <a href="http://www.json.org/">JSON</a> grammar (per
+<a href="http://www.ietf.org/rfc/rfc4627.txt">RFC 4627</a>) permits a
+few escapes, and apostrophe is not among them.  To wit:</p>
+
+<pre>         string = quotation-mark *char quotation-mark
+
+         char = unescaped /
+                escape (
+                    %x22 /          ; "    quotation mark  U+0022
+                    %x5C /          ; \    reverse solidus U+005C
+                    %x2F /          ; /    solidus         U+002F
+                    %x62 /          ; b    backspace       U+0008
+                    %x66 /          ; f    form feed       U+000C
+                    %x6E /          ; n    line feed       U+000A
+                    %x72 /          ; r    carriage return U+000D
+                    %x74 /          ; t    tab             U+0009
+                    %x75 4HEXDIG )  ; uXXXX                U+XXXX
+
+         escape = %x5C              ; \
+
+         quotation-mark = %x22      ; "
+
+         unescaped = %x20-21 / %x23-5B / %x5D-10FFFF</pre>
+
+<p>Apostrophe is <code>U+0027</code>.</p>
+
+<p>As with the UTF-8 issues, it's a quick job to implement a filter to
+scan for escaped apostrophes and unescape them, but it would be nice
+if what is advertised as JSON was actually JSON.</p>
+

@@ -1,0 +1,18 @@
+---
+layout: post
+title: "Pretty PDF Annotation with OmniGraffle"
+permalink: pretty-pdf-annotation-with-omnigraffle.html
+categories: [pdf, macosx, omnigraffle, keynote]
+---
+<p>The Mac OS <a href="http://www.apple.com/macosx/features/pdf/">Preview</a> application is good for lots of things, but the annotation functionality is not that great, i.e., crappy.  So, I decided to try <a href="http://www.omnigroup.com/applications/omnigraffle/">OmniGraffle</a> instead, and that approach has its pluses and minuses.  On the plus side, OmniGraffle supports importing a multi-page PDF document.  On the minus side, at least for me (OmniGraffle Pro 4.1.1), it doesn't actually import any of the PDF but just creates a document with the right number of pages...</p>
+
+<p>Fortunately, <a href="http://www.cs.hmc.edu/~oneill/">Melissa O'Neill</a> from the <a href="http://www.cs.hmc.edu/">CS Department</a> at <a href="http://www.hmc.edu/">Harvey Mudd College</a> cooked up an app called <a href="http://www.cs.hmc.edu/~oneill/freesoftware/pdftokeynote.html">PDFtoKeynote</a> that will export a multi-page PDF document either as a <a href="http://www.apple.com/iwork/keynote/">Keynote</a> presentation or as an OmniGraffle document.  (Check out her rant at the bottom of the page that was inspired by Keynote's XML <a href="http://developer.apple.com/appleapplications/keynote-apxl.html">file format</a>, ending with &#8220;And remember, in the time it takes to write a DTD, you could have written a grammar specification for a parser generator like Yacc or Antlr.&#8221;  Amen, sister.)</p>
+
+<p>Here's my recipe for using OmniGraffle for annotations:</p>
+
+<ol>
+<li>Use Preview to scale the document to 75% of its original size by changing the scaling factor in the page setup and exporting to PDF.  This will give you a nice border to scribble in.  (Or have the author(s) leave a big margin for you in their draft.)</li>
+<li>Open the scaled-down document in PDFtoKeynote, select the 612x792 dimensions, and save as an OmniGraffle document.</li>
+<li>Open the document in OmniGraffle.  Hit <tt>CMD-A</tt> <tt>CMD-L</tt> (select all, lock) to lock all of the pages in place.</li>
+<li>Draw on the document with OmniGraffle.</li>
+</ol>

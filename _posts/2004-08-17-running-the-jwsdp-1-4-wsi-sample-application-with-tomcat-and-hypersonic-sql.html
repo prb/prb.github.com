@@ -1,0 +1,78 @@
+---
+layout: post
+title: "Running the JWSDP 1.4 WSI Sample Application with Tomcat and Hypersonic SQL"
+permalink: running-the-jwsdp-1-4-wsi-sample-application-with-tomcat-and-hypersonic-sql.html
+---
+<p>The <a href="http://java.sun.com/webservices/jwsdp/index.jsp">Java Web Services Developer Pack 1.4</a> includes an implementation of the <a href="http://ws-i.org/">WS-I</a> supply chain demo application and instructions for deploying the application on Tomcat with MySQL for persistence.  I'd prefer to have a version of the sample application that has only a minimal number of dependencies, and here is how to get it.</p>
+
+<h3>Ingredients</h3>
+
+<p>You'll need the following:</p>
+
+<ul>
+<li>The JWSDP, available <a href="http://java.sun.com/webservices/jwsdp/index.jsp">here</a>.</li>
+<li>The JWSDP's recommended version of Tomcat, available <a href="http://java.sun.com/webservices/containers/tomcat_for_JWSDP_1_4.html">here</a>.</li>
+<li>The Hypersonic SQL library, available from the <a href="http://hsqldb.sourceforge.net/">here</a>.</li>
+</ul>
+
+<h3>Steps</h3>
+
+<p><strong>Step 1.</strong>  Unpack Tomcat somewhere convenient, e.g., <code>$TOMCAT_HOME</code>.</p>
+
+<p><strong>Step 2. </strong>  Create a file named <code>hsql.db.props</code> in the <code>$JWSDP_HOME/wsi-sample/etc</code> directory with the following contents:</p>
+
+<blockquote><code>db.driver=org.hsqldb.jdbcDriver<br />
+db.url=jdbc:hsqldb:wsidb<br />
+db.password=<br />
+db.table.exist=21</code></blockquote>
+
+<p>(The <code>db.table.exist=21</code> is the slightly tricky piece, and I got it by running a <code>grep</code> over the Hypersonic SQL codebase.)</p>
+
+<p><strong>Step 3.</strong>  Run Ant from <code>$JWSDP_HOME/wsi-sample/src</code> to reconfigure the WAR:</p>
+
+<blockquote><code>../../ant/bin/ant repackage-war -Ddatabase=hsql</code></blockquote>
+
+<p><strong>Step 4.</strong>  Follow the instructions (in <code>$JWSDP_HOME/wsi-sample/docs/index.html</code>) to deploy the application to Tomcat:</p>
+
+<blockquote><code>cd $JWSDP_HOME/jwsdp-shared/bin<br />
+./jwsdpontomcat.sh $TOMCAT_HOME deploy.wsi-sampleapp.webapps</code></blockquote>
+
+<p><strong>Step 5.</strong>  Place the following JAR files in the <code>$TOMCAT_HOME/common/lib</code> directory:</p>
+
+	<ul>
+	<li><code>hsqldb.jar</code></li>
+	<li><code>$JWSDP_HOME/saaj/lib/*.jar</code></li>
+	<li><code>$JWSDP_HOME/jaxb/lib/*.jar</code></li>
+	<li><code>$JWSDP_HOME/jaxrpc/lib/*.jar</code></li>
+	<li><code>$JWSDP_HOME/jaxp/lib/jaxp-api.jar</code></li>
+	<li><code>$JWSDP_HOME/jwsdp-shared/lib/*.jar</code></li>
+	</ul>
+
+<p><strong>Step 6.</strong> Rename the <code>xercesImpl.jar</code> and <code>xmlParserAPIs.jar</code> JAR files in the <code>$TOMCAT_HOME/common/endorsed</code> directory to something other than a <code>.jar</code> extension and then copy in the following JAR files:</p>
+
+	<ul>
+	<li><code>$JWSDP_HOME/jaxp/endorsed/*.jar</code></li>
+	</ul>
+
+<p><strong>Fin.</strong> With any luck, you&#8217;re done, so cross your fingers, and run Tomcat:</p>
+
+<blockquote><code>cd $TOMCAT_HOME/bin<br />
+./catalina run</code></blockquote>
+
+<p>You should be able to hit the URL <code>http://localhost:8080/wsi-server</code> and see the list of endpoints supported by the application.  To make sure that all is well, run the retailer sample client:</p>
+
+<blockquote><code>cd $JWSDP_HOME/wsi-sampleapp/bin<br />
+./run-retailer.sh</code></blockquote>
+
+<p>In the window with the <code>catalina.sh</code> process running, you should see, among other things, a sequence of log messages that look something like this:</p>
+
+<blockquote><small>
+<pre>Aug 17, 2004 5:41:12 PM com.sun.wsi.scm.util.DBConnectionPool &lt;init&gt;
+INFO: Found database &quot;HSQL Database Engine 1.7.1&quot;
+Aug 17, 2004 5:41:12 PM com.sun.wsi.scm.util.DBConnectionPool &lt;init&gt;
+INFO: Using driver &quot;HSQL Database Engine Driver 1.7.1&quot;
+Aug 17, 2004 5:41:12 PM com.sun.wsi.scm.util.DBConnectionPool &lt;init&gt;
+INFO: Logging table created
+Aug 17, 2004 5:41:12 PM com.sun.wsi.scm.util.DBConnectionPool &lt;init&gt;
+INFO: Callback table created</pre>
+</small></blockquote>

@@ -1,0 +1,29 @@
+---
+layout: post
+title: "Preventing Carpal Tunnel with AOP"
+permalink: preventing-carpal-tunnel-with-aop.html
+categories: [aop]
+---
+<p>It's the weekend, and I have some time to look at (relatively) pure technology.</p>
+
+<p><a href="http://www.aosd.net/">Aspect-oriented software development</a> (a.k.a. aspect-oriented programming or AOP) enables developers to "modularize crosscutting aspects of a system" such as context-dependent logging, tracing, instrumentation, and error checking/handling, among others. Different implementations support "weaving" of aspects into code at compile time or at runtime, but the result can be a significant amount of leverage from a small amount of code. For exception logging and method entry/exit instrumentation alone, I shudder to think about the number of keystrokes it would saved me over my programming lifetime.</p>
+
+<p>al experiment with AOP (specifically, with <a href="http://www.aspectj.org/">AspectJ</a>), a partial refactoring of a text-to-XML transformation tool, has resulted in a substantially smaller and simpler implementation with some additional debugging and profiling functionality as a welcome side-effect.</p>
+
+<p>There are a virtually unlimited number of runtime, test-time, and development-time applications for AOP. One particuarly clever runtime application is <a href="http://crazybob.org/">crazybob</a>'s tool to create <a href="http://www.omg.org/uml/">UML</a> <a href="http://www.omg.org/gettingstarted/what_is_uml.htm#12DiagramTypes">sequence diagrams</a> from a running Java program. There are even refactoring- and maintenance-oriented applications for AOP. For example, it would be interesting to hook up a cut-and-pasted code detector like <a href="http://pmd.sourceforge.net/cpd.html">CPD</a> (based on <a href="http://pmd.sourceforge.net/">PMD</a>) to an aspect-oriented system in an effort to pull duplicated blocks of code into aspects. (Maybe this is what <a href="http://www.cs.ubc.ca/~mrobilla/feat2/">FEAT</a> does, which would make sense given that <a href="http://alphaworks.ibm.com/tech/jikesbt">JikesBT</a> provides functionality along the same lines as <a href="http://www.experimentalstuff.com/Technologies/JavaCC/index.html">JavaCC/JJTree</a> provides in the context of PMD.)</p>
+
+<p>On the tools/implementations front, AspectJ looks like it will soon have some <a href="http://bugs.eclipse.org/bugs/show_bug.cgi?id=31460">runtime weaving functionality</a>, a feature that could turn it into an over-all front-runner for AOP in Java. (For starters, I would be happy with a working AspectJ plugin for the version of Eclipse that I use, i.e., 2.1M5, but I'm happy editing with <code>vi</code> and running <code>ajc</code> on the command-line for now.) There are other maturing approaches (e.g., <a href="http://www.csg.is.titech.ac.jp/~chiba/javassist/">Javassist</a>), but clearly, a single technique if not a single free and open tool - something that people can write and read about and that integrates cleanly with established practices and other tools - is required for widespread digestion and adoption of the technology.</p>
+
+<p>AOP is as different from object-oriented programming ("OOP") as OOP
+was from just plain programming ("JPP"). In fact, AOP is primarily an
+academic concern for the moment. (AOP is geek-chic enough to have
+produced multiple nerd brawls&hellip; Hold your fire! I'm in both
+categories.) The questions of how long AOP adoption will take, how far
+it will go, and in what form are all still very much open. The tools
+and evangelism necessary to build a bandwagon are just getting
+started, but even in the hands of a relatively few well-placed
+software architects, AOP holds the promise of creating simpler
+software: incontrovertibly a <a
+href="http://www.flightpath.com/nublog/archives/000806.html">Good
+Thing</a> for both vendors and customers. </p>
+

@@ -1,0 +1,593 @@
+##
+## WS-BPEL schema (based on the September 2, 2004 committee draft) in
+## Relax NG Compact Syntax
+## 
+## Translated from XML Schema version by Paul Brown <prb@fivesight.com>
+##
+## This schema differs from the XML Schema version in the following
+## respects:
+## 
+## 1. The bpel:service-ref element is added as a from-spec.
+##
+## 2. The attribute extensibility excludes non-namespace-qualified
+##    attributes.
+##
+## 3. The multiplicity of the bpel:import element is specified to
+##    zero-or-more, which is consistent with 6.4 of the spec.
+##
+## 
+namespace xml = "http://www.w3.org/XML/1998/namespace"
+namespace null = ""
+datatypes xsd = "http://www.w3.org/2001/XMLSchema-datatypes"
+namespace bpel = "http://schemas.xmlsoap.org/ws/2004/03/business-process/"
+
+start =
+  element bpel:process {
+    attribute name { xsd:NCName },
+    attribute suppressJoinFailure { "yes"|"no" }?,
+    attribute targetNamespace { xsd:anyURI },
+    attribute queryLanguage { xsd:anyURI }?,
+    attribute expressionLanguage { xsd:anyURI }?,
+    attribute enableInstanceCompensation { "yes"|"no" }?,
+    attribute abstractProcess { "yes"|"no" }?,
+    attribute surpressJoinFailure { "yes"|"no" }?,
+    extensibility,
+    import*,
+    partnerLinks?,
+    partners?,
+    variables?,
+    correlationSets?,
+    faultHandlers?,
+    compensationHandler?,
+    eventHandlers?,
+    activity
+  }
+
+
+  ## 
+  ## Technically, the WS-BPEL schema allows any attribute in a
+  ## namespace other than the BPEL namespace, but this doesn't make a
+  ## lot of sense, since the attributes are not qualified.  Thus, to
+  ## help context-sensitive editing and enforcement of patterns, we
+  ## exclude unqualified attributes as well as bpel:* attributes.
+  ##
+  anyother.atts = 
+    attribute * - ( bpel:* | null:* ) { text }*
+
+  documentation =
+    element bpel:documentation {
+      attribute source { xsd:anyURI }?,
+      attribute xml:lang { xsd:language }?,
+      ( text & ANY )*
+    }?,
+    OTHER*
+
+  ## This pattern will recognize any element (along with its content)
+  ## that is not in the bpel namespace.
+  OTHER =
+    element * - bpel:* {
+      ( attribute * { text }
+        | text
+        | OTHER
+      )*
+    }
+
+  ## This pattern will recognize any element (along with its content),
+  ## whether or not it is in the bpel namespace.
+  ANY =
+    element * {
+      ( attribute * { text }
+        | text
+        | ANY
+      )*
+    }
+
+  extensibility = 
+    anyother.atts,
+    documentation,
+    OTHER*
+
+  import =
+    element bpel:import {
+      attribute namespace { xsd:anyURI }?,
+      attribute location { xsd:anyURI }?,
+      attribute importType { "http://www.w3.org/2001/XMLSchema" | "http://schemas.xmlsoap.org/wsdl/" }?,
+      extensibility
+    }
+
+  partnerLinks = 
+    element bpel:partnerLinks {
+      extensibility,
+      partnerLink+
+    }
+
+  partnerLink =
+    element bpel:partnerLink {
+      attribute name { xsd:NCName },
+      attribute partnerLinkType { xsd:QName },
+      attribute myRole { xsd:NCName }?,
+      attribute partnerRole { xsd:NCName}?,
+      extensibility
+    }
+
+  partners = 
+    element bpel:partners {
+      extensibility,
+      partner+
+    }
+
+  partner =
+    element bpel:partner {
+      attribute name { xsd:NCName },
+      extensibility,
+      element bpel:partnerLink {
+        attribute name { xsd:NCName },
+        extensibility
+      }+
+    }
+
+  variables =
+    element bpel:variables {
+      extensibility,
+      variable+
+    }
+
+  variable =
+    element bpel:variable {
+      attribute name { xsd:NCName },
+      ( attribute messageType  { xsd:QName }
+      | attribute type { xsd:QName }
+      | attribute element {xsd:QName }),
+      extensibility
+    }
+
+  correlationSets =
+    element bpel:correlationSets {
+      extensibility,
+      correlationSet+
+    }
+  
+  correlationSet =
+    element bpel:correlationSet {
+      attribute name { xsd:NCName },
+      attribute properties { list { xsd:QName } },
+      extensibility
+    }
+  
+  faultHandlers =
+    element bpel:faultHandlers {
+      extensibility,
+      ( ( catch+,
+          catchAll?)
+        | ( catch *,
+            catchAll ) )
+    }
+  
+  ## The current draft dictates that the faultName and
+  ## faultMessageType can not both be absent.
+
+  catch =
+    element bpel:catch {
+      ( ( attribute faultName {xsd:QName },
+        attribute faultMessageType { xsd:QName }? )
+      | ( attribute faultName { xsd:QName }?,
+      attribute faultMessageType { xsd:QName } ) ),
+      attribute faultVariable { xsd:NCName }?,
+      extensibility,
+      activityOrCompensate
+    }
+
+  catchAll =
+    element bpel:catchAll {
+      extensibility,
+      activityOrCompensate
+    }
+
+
+  compensationHandler =
+    element bpel:compensationHandler {
+      extensibility,
+      activityOrCompensate
+    }
+
+  activityOrCompensate =
+    activity
+    | compensate
+
+  ## The specification dictates that there must be at least one
+  ## onEvent or onAlarm handler present.
+  eventHandlers =
+    element bpel:eventHandlers {
+      extensibility,
+      ( ( onEvent+,
+        onAlarm* )
+      | onAlarm+ )
+    }
+
+  onEvent =
+    element bpel:onEvent {
+      partner.atts,
+      attribute variable { xsd:NCName },
+      attribute messageType { xsd:QName },
+      extensibility,
+      correlations,
+      activityOrCompensate
+    }
+
+  for = 
+    element bpel:for {
+      duration
+    } 
+
+  until = 
+    element bpel:until {
+      duration
+    }
+
+  ## The for and until are exclusive, but either can be coupled with
+  ## repeatEvery.
+  onAlarm =
+    element bpel:onAlarm {
+      extensibility,
+      ( for | 
+        until )?,
+      element bpel:repeatEvery {
+        duration
+      }?,
+      activity
+    }
+
+  ## Simple pass-through model in this case.
+  duration =
+    expression.content
+
+  expression.content = 
+    attribute expressionLanguage { xsd:anyURI }?,
+    ( text* & ANY* )
+
+  activity =
+    \empty
+    | invoke
+    | receive 
+    | reply 
+    | assign
+    | wait
+    | throw
+    | rethrow
+    | terminate
+    | flow
+    | switch
+    | while
+    | sequence
+    | pick
+    | scope
+  
+  activity.content = 
+    activity.atts,
+    extensibility,
+    linkRefs
+  
+  \empty =
+    element bpel:empty {
+      activity.content
+    }
+  
+  activity.atts =
+    attribute name { xsd:NCName }?,
+    attribute surpressJoinFailure { "yes"|"no" }?
+  
+  linkRefs =
+    element bpel:targets {
+      extensibility,
+      element bpel:joinCondition {
+        condition.content
+      },
+      element bpel:target {
+        attribute linkName { xsd:NCName },
+        extensibility
+      }+
+    }?,
+    element bpel:sources {
+      documentation,
+      element bpel:source {
+        attribute linkName { xsd:NCName },
+        documentation,
+        element bpel:transitionCondition {
+          condition.content
+        }
+      }
+    }?
+  
+  condition.content =
+    attribute expressionLanguage { xsd:anyURI }?,
+    ( text* & ANY* )
+  
+  compensate =
+    element bpel:compensate {
+      attribute scope { xsd:NCName },
+      activity.content
+    }
+  
+  partner.atts =
+    attribute partnerLink { xsd:NCName },
+    attribute portType { xsd:QName }?,
+    attribute operation { xsd:NCName }
+  
+  invoke =
+    element bpel:invoke {
+      partner.atts,
+      attribute inputVariable  { xsd:NCName }?,
+      attribute outputVariable { xsd:NCName }?,
+      activity.content,
+      correlationsWithPattern?,
+      catch*,
+      catchAll?,
+      compensationHandler?
+    }
+    
+  correlations =
+    element bpel:correlations {
+      extensibility,
+      correlation+
+    }
+
+  correlationsWithPattern =
+    element bpel:correlations {
+      extensibility,
+      correlationWithPattern+
+    }
+ 
+  correlation.atts = 
+    attribute set { xsd:NCName },
+    attribute initiate { "yes"|"rendezvous"|"no" }?
+  
+  correlation =
+    element bpel:correlation {
+      correlation.atts,
+      extensibility
+    }
+  
+  correlationWithPattern = 
+    element bpel:correlation {
+      correlation.atts,
+      attribute pattern { "in" | "out" | "out-in" }?,
+      extensibility
+    }
+  
+  receive =
+    element bpel:receive {
+      partner.atts,
+      attribute variable { xsd:NCName }?,
+      attribute createInstance  { "yes"|"no" }?,
+      activity.content,
+      correlations?
+    }
+
+  reply =
+    element bpel:reply {
+      partner.atts,
+      attribute variable { xsd:NCName }?,
+      attribute faultName { xsd:QName }?,
+      activity.content,
+      correlations?
+    }
+
+  assign =
+    element bpel:assign {
+      activity.content,
+      copy+
+    }
+  
+  variable.att = 
+    attribute variable { xsd:NCName }
+
+##
+## NOTE: To enable the section 14.3 extension for queries on parts,
+## add the query pattern to the from.variable.part and
+## to.variable.part patterns below.
+##
+
+  query = 
+    element bpel:query {
+      attribute queryLanguage { xsd:anyURI }?,
+      mixed { ANY }*
+    }
+
+  from.variable.part =
+    element bpel:from {
+      variable.att,
+      attribute part { xsd:NCName}?,
+      extensibility
+    }
+
+  from.variable.property =
+    element bpel:from {
+      variable.att,
+      attribute property { xsd:QName },
+      extensibility
+    }
+
+  from.partnerLink.endpointReference =
+    element bpel:from {
+      attribute partnerLink { xsd:NCName },
+      attribute endpointReference { "myRole" | "partnerRole" },
+      extensibility
+    }
+
+  from.expression = 
+    element bpel:from {
+      extensibility,
+      expression
+    }
+  
+  expression = 
+    element bpel:expression {
+      expression.content
+    }
+
+  from.literal =
+    element bpel:from {
+      extensibility
+    }
+
+  from.opaque =
+    element bpel:from {
+      attribute opaque { "yes" }
+    }
+
+  from.service-ref =
+    element bpel:from {
+      extensibility,
+      element bpel:service-ref {
+        attribute reference-scheme { xsd:anyURI },
+        OTHER*
+      }
+    }
+
+  to.variable.part = 
+    element bpel:to {
+      anyother.atts,
+      variable.att,
+      attribute part { xsd:NCName }?
+    }
+
+  to.partnerLink = 
+    element bpel:to {
+      anyother.atts,
+      attribute partnerLink { xsd:NCName }
+    }
+
+  to.variable.property = 
+    element bpel:to {
+      anyother.atts,
+      variable.att,
+      attribute property { xsd:QName }
+    }
+
+  copy = 
+    element bpel:copy {
+      extensibility,
+      ( ( ( from.variable.part
+            | from.variable.property
+            | from.partnerLink.endpointReference
+            | from.expression
+            | from.literal ),
+          ( to.variable.part
+            | to.partnerLink
+            | to.variable.property ) )
+      | ( from.opaque,
+        to.variable.property ) )  
+    }
+
+  wait =
+    element bpel:wait {
+      activity.content,
+      ( for
+        | until )
+    }
+
+  throw =
+    element bpel:throw {
+      attribute faultName { xsd:QName },
+      attribute faultVariable { xsd:NCName },
+      activity.content
+    }
+  
+  rethrow =
+    element bpel:rethrow {
+      activity.content
+    }
+  
+  terminate =
+    element bpel:terminate {
+      activity.content
+    }
+  
+  flow = 
+    element bpel:flow {
+      activity.content,
+      links?,
+      activityOrCompensate+
+    }
+
+  links =
+    element bpel:links {
+      extensibility,
+      link+
+    }
+  
+  link = 
+    element bpel:link {
+      attribute name { xsd:NCName },
+      extensibility
+    }
+  
+  switch =
+    element bpel:switch {
+      activity.content,
+      ( ( case+,
+          otherwise? )
+        | ( case*,
+            otherwise) )
+    }
+    
+  case = 
+    element bpel:case {
+      extensibility,
+      condition,
+      activity
+    }
+
+  condition =
+    element bpel:condition {
+      condition.content
+    }
+
+  otherwise =
+    element bpel:otherwise {
+      extensibility,
+      activity+
+    }
+
+  while = 
+    element bpel:while {
+      activity.content,
+      condition,
+      activity
+    }
+  
+  sequence =
+    element bpel:sequence {
+      activity.content,
+      activity+
+    }
+
+  pick = 
+    element bpel:pick {
+      attribute createInstance { "yes"|"no" },
+      extensibility,
+      onMessage+,
+      onAlarm*
+    }
+  
+  onMessage =
+    element bpel:onMessage {
+      partner.atts,
+      variable.att,
+      attribute messageType { xsd:QName },
+      extensibility,
+      correlations?,
+      activityOrCompensate
+    }
+
+  scope =
+    element bpel:scope {
+      attribute variableAccessSerializable { "yes"|"no" }?,
+      activity.content,
+      variables?,
+      correlationSets?,
+      faultHandlers?,
+      compensationHandler?,
+      eventHandlers?,
+      activity
+    }

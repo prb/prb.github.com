@@ -1,0 +1,181 @@
+---
+layout: post
+title: "Create Multi-Level Delimited Output from a SAX Stream"
+permalink: create-multi-level-delimited-output-from-a-sax-stream.html
+---
+<p>One of the standard questions about generating non-XML output from an XML document is how to produce CSV, and a natural generalization is how to produce multi-level delimited output with a comma for one level, a semi-colon for the next, etc. This task can be accomplished with XSLT, but it can also be accomplished (perhaps more simply) with SAX and Java.</p>
+
+<p>This post illustrates how to build a <tt>org.xml.sax.ContentHandler</tt> that turns an XML hierarchy into an equivalent hierarchy of delimited text, along with a trick for dealing with whether delimiters go before, after, or between tokens. Putting a delimiter before or after each token is straightforward, and putting a delimiter only between tokens is equivalent to putting a delimiter before each token other than the first one.</p>
+
+<h3>Code</h3>
+<p>First, we need a few imports and a class declaration:</p>
+
+<pre class="code">import java.io.IOException;
+import java.io.Writer;
+import org.xml.sax.Locator;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+import org.xml.sax.helpers.DefaultHandler;
+
+public class DelimiterizerHandler
+  extends DefaultHandler {</pre>
+
+<p>The choice to extend <tt>DefaultHandler</tt> as opposed to implementing <tt>ContentHandler</tt> is arbitrary but does save typing a few empty method bodies, since we're ignoring things like processing instructions.</p>
+
+<p>These contants control the placement of delimiters at each level, and the two arrays hold the delimiters and placements for each level. (The 0th level is the top one.)</p>
+
+<pre class="code">  public static final int DELIMITER_BEFORE = -1;
+  public static final int DELIMITER_BETWEEN = 0;
+  public static final int DELIMITER_AFTER = 1;
+  private int _depth;
+
+  private String[] _delimiters;
+  private int[] _directions;</pre>
+
+<p>The array of boolean flags is used to track whether the first token in a group has been output, and the integer is used to track the maximum expected depth of the hierarchy. (This is better than either of the alternatives: lots of bounds checking or <tt>ArrayIndexOutOfBoundsException</tt>s.) The boolean flag is used to control text output.</p>
+
+<pre class="code">  private boolean[] _flags;
+  private int _maxDepth;
+  private boolean _enableText;</pre>
+
+<p>The rest of the fields hold objects supplied either by the user or by the <tt>XMLReader</tt> that is sending events.</p>
+
+<pre class="code">  private Locator _locator;
+  private Writer _w;</pre>
+
+<p>The constructor does nothing more than configure the internal parameters:</p>
+
+<pre class="code">  public DelimiterizerHandler(String[] delimiters, int[] positions) {
+    _delimiters = delimiters;
+    _directions = positions;
+    _maxDepth = positions.length;
+    _flags = new boolean[_maxDepth + 1];
+    if (_delimiters.length != _maxDepth) {
+      throw new IllegalArgumentException("The cardinality of delimiters and positioning flags must be equal.");
+    }
+  }</pre>
+
+<p>Thus, if we wanted a CR-LF pair after all top-level records, a semi-colon between all second-level records, and a comma between all third-level records, we would use:</p>
+
+<pre class="code">  new DelimiterizerHandler(new String[] {"\015\012",";",","},
+    new int[] {
+      DelimiterizerHandler.DELIMITER_AFTER,
+      DelimiterizerHandler.DELIMITER_BETWEEN,
+      DelimiterizerHandler.DELIMITER_BETWEEN
+    }
+  )</pre>
+
+<p>Keeping track of <tt>Locator</tt> information is not strictly necessary, but it is useful in providing detailed error information with a <tt>SAXParseException</tt>.</p>
+
+<pre class="code">  public void setDocumentLocator(Locator locator) {
+    _locator = locator;
+  }</pre>
+
+<p>Next, we need setter/getter methods for the output <tt>java.io.Writer</tt> and some convenience methods to avoid wrapping each output operation with a <tt>try</tt>/<tt>catch</tt> block. (The method bodies will be in-lined by the JVM at some point anyway.) Notice the use of <tt>SAXParseException</tt> to provide detailed exception information through the <tt>Locator</tt> that the <tt>XMLReader</tt> passed to us.</p>
+
+<pre class="code">  public void setWriter(Writer w) {
+    _w = w;
+  }
+
+  public Writer getWriter() {
+    return _w;
+  }
+
+  private void out(String s)
+        throws SAXException {
+    try {
+      _w.write(s);
+    } catch (IOException ioe) {
+      throw new SAXParseException("IOException creating output: "
+                                  + ioe.getMessage(), _locator, ioe);
+    }
+  }
+
+  private void out(char[] c, int start, int len)
+        throws SAXException {
+    try {
+      _w.write(c, start, len);
+    } catch (IOException ioe) {
+      throw new SAXParseException("IOException creating output: "
+                                  + ioe.getMessage(), _locator, ioe);
+    }
+  }</pre>
+
+<p>The <tt>startDocument</tt> event initializes the state of the handler when the <tt>XMLReader</tt> starts sending events. In practice, the right place to put initialization code is in the <tt>startDocument</tt> event. In theory, an <tt>XMLReader</tt> is required to always call the <tt>endDocument</tt> method on <tt>ContentHandler</tt>, so clean-up code could be placed in the <tt>endDocument</tt> method.</p>
+
+<pre class="code">  public void startDocument()
+        throws SAXException {
+    if (_w == null) {
+      throw new SAXParseException("No output Writer is configured.",
+                                  _locator);
+    }
+    initFlags();
+    _depth = -2;
+  }</pre>
+
+<p>The starting value for <tt>_depth</tt> is selected based on my habitual preference for preincrement versus postincrement and the assumption that the document element in the input XML does not count as a level.</p>
+
+<p>The characters method has a gate on it to prevent the output of superfluous whitespace between elements, and this represents the assumption that some amount of superfluous whitespace may be floating around.</p>
+
+<pre class="code">  public void characters(char[] c, int start, int length)
+        throws SAXException {
+    if (length != 0 &amp;&amp; _enableText) {
+      out(c, start, length);
+    }
+  }</pre>
+
+<p>The meat of the handler is in the state tracking code for the <tt>startElement</tt> and <tt>endElement</tt> events.</p>
+
+<pre class="code">  public void startElement(
+    String uri,
+    String localName,
+    String qName,
+    Attributes atts)
+    throws SAXException {
+    if (++_depth &gt; _maxDepth) {
+      throw new SAXParseException(
+        "Depth of XML exceeds number of delimiter specifications.",
+        _locator);
+    }
+    if (_depth &gt; -1) {
+      if (_directions[_depth] == DELIMITER_BEFORE
+        || (_flags[_depth] &amp;&amp; _directions[_depth] == DELIMITER_BETWEEN)) {
+        out(_delimiters[_depth]);
+      }
+      _flags[_depth] = true;
+    }
+    _enableText = _depth &gt; -1;
+  }
+
+  public void endElement(String uri, String localName, String qName)
+        throws SAXException {
+    if (_depth &gt; -1 &amp;&amp; _directions[_depth] == DELIMITER_AFTER) {
+      out(_delimiters[_depth]);
+    }
+    // clear the flag for the level above
+    if (_depth &lt; 2 &amp;&amp; _depth > -2) {
+      _flags[_depth + 1] = false;
+    }
+    --_depth;
+    _enableText = false;
+  }</pre>
+
+<p>The initial setting of <tt>_depth</tt> at <tt>-2</tt> means that once the document element is consumed, <tt>_depth</tt> is <tt>-1</tt>, and then when a first-level element is encountered, <tt>_depth</tt> is zero after the initial preincrement operation.</p>
+
+<p>The text output enablement here is a bit kludgey and, as-is, only really protects against whitespace that occurs outside of the first-level elements.</p>
+
+<p>This utility method initializes the flags by running through the array. This could be substituted in practice by simply creating a new array, since boolean variables are initialized to false in my experience, but I've never looked at the Java language specification to see if this behavior is specified.</p>
+
+<pre class="code">  private void initFlags() {
+    for (int i = 0; i &lt; _maxDepth; ++i) {
+      _flags[i] = false;
+    }
+  }
+}</pre>
+
+<p>The best way to see how the various pieces work together is to use a Java debugger and step through the code.</p>
+
+<h3>Enhancements</h3>
+
+<p>This code can be extended to provide some additional behaviors like outputting the local name of the element at some levels, in which case this provides a simple (and very fast) way to reproduce things like EDI messages from XML representations.</p>

@@ -1,0 +1,26 @@
+---
+layout: post
+title: "Software, Services, and Avoiding O(n)"
+permalink: software-services-and-avoiding-o-n.html
+---
+<p>Bryan Cantrill has an interesting and detailed <a href="http://blogs.sun.com/roller/page/bmc/20040828">discussion</a> of the economics of software on his weblog, and I've been trying to reconcile Bryan's thoughtful exposition with what I know about the costs -- in the current market -- of traditional sales and distribution of complex enterprise software.   I'm using "distribution" to mean the set of activities that occur between making a sale and having a customer.  For relatively simple software, that could be sending a CD or DVD in the mail.</p>
+
+<p>Here's a snapshot of my mental scratch paper:</p>
+
+<p>Presuming that you have a team that understands product development as opposed to project development, the production of two units of an enterprise software product costs the same as the production of one unit, and thus has zero variable cost.  (If you have a project team as opposed to a product team, the production of <code>n</code> units actually costs <code>n+O(n)</code> times as much as producing one unit.)  Selling and distributing that software requires targeted marketing, inside sales, outside sales, sales engineers for proofs of concept, and a bench of implementation staff at the ready.  A straightforward analysis will show that the cost of selling and distributing <code>n</code> units is <code>O(n)</code> times the cost of selling and distributing one unit; thus the softwareness (and profitability) of an enterprise software company directly depends on how difficult it is to sell and implement the product.</p>
+
+<p>So, what gives?  Enterprise software <em>is</em> software, isn't it?  If that cost of sales and distribution is <code>~0.1n</code>, then it's not software, but it's not so bad.  On the other hand, if the cost gets close to <code>~1.0n</code>, then it's bad unless you're an established player preserving your marketshare.  (This is why it is important to be first to market.)  In an off-blog email exchange with Bryan, I think he put his finger on the reason, which I'll paraphrase: "That sounds like services, not software."</p>
+
+<p>Building enterprise software products and supporting enterprise software products are both situations where the cost of <code>n</code> units is <code>O(1)</code>, so a key element in selecting a business strategy is figuring out both how to make <code>n</code> sufficiently large while keeping the cost of sales and distribution managable.</p>
+
+<p>Widely used open source is one way to do it, since <code>n</code> is large and sales and distribution are essentially free.  Loosely:</p>
+
+<ul>
+<li>The cost of sales is the cost of maintainging a community, which is arguably <code>O(1)</code>.</li>
+<li>The cost of distribution, if handled by professional services partners, is a manageable <code>O(n)</code> (like <code>~0.1n</code>) for the overhead of partner management and training.</li>
+<li>The <code>O(n)</code> revenue produced by the support business dominates the <code>O(1)</code> cost of engineering and manufacturing.</li>
+</ul>
+
+<p>And that sounds like a software business.</p>
+
+<p>There are other ways to do it, too, related to packaging, but I'll leave those for another entry.</p>

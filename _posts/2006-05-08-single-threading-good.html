@@ -1,0 +1,7 @@
+---
+layout: post
+title: "Single Threading Good"
+permalink: single-threading-good.html
+categories: [erlang, concurrency, multicore]
+---
+<p>Perhaps surprisingly, a <a href="http://www.franklinmint.fm/blog/archives/000792.html">post</a> from <a href="http://www.franklinmint.fm">Robert Sayre</a>, who's been playing with <a href="http://www.erlang.org/">Erlang</a> on a SUN Fire <a href="http://www.sun.com/servers/coolthreads/t2000/getit.jsp">T2000</a> (lucky bum on both counts), doesn't surprise me: best performance is achieved when the number of Erlang schedulers is equal to the number of hardware threads (i.e., &#8220;CoolThreads&#8221; in the case of the SUN box).  Experience has borne out that using a single low-level thread under lightweight higher-level structures to manage concurrency is usually a good plan, and at least intuitively, the <a href="http://en.wikipedia.org/wiki/Pigeonhole_principle">pigeonhole principle</a> says that this should apply to additional low-level threads (or cores) if the higher-level structures are designed properly.  (More threads than cores would mean that at any point in time one of the cores was supporting multiple threads and thus slower than it would be if it were only supporting one.)</p>

@@ -1,0 +1,155 @@
+---
+layout: post
+title: "STM, IO, and a Simple Persistence Model"
+permalink: stm-and-io.html
+categories: [stm, io, haskell, persistence]
+---
+<p>Herein post 5 of <code>n</code> on my hobby project to rewrite my personal publishing software in Haskell.  (In strict terms, the project is to <em>write</em> it, since I didn't write the current system.)  This post covers persistence and concurrency using the filesystem and <a href="http://www.haskell.org">Haskell</a>'s <a href="http://www.haskell.org/haskellwiki/Software_transactional_memory">software transactional memory</a> implementation.</p>
+
+<h3>Exploiting Commutativity and Choosing Locking Granularity</h3>
+
+<p>As I imagine things working, the basic operations that I want to be able to perform against the persistent form of the blog are something like:</p>
+
+<ul>
+<li>Create an entry (and by extension, a comment).</li>
+<li>Change the metadata on an entry, e.g., publish/unpublish or add/remove tags.</li>
+<li>Add a comment to an existing entry.</li>
+</ul>
+
+<p>From an end-user perspective, these all commute with each other &#8212; it doesn't matter whether a comment is added before or after a tag is changed &#8212; so it's reasonable to let the system take care of ordering the operations to be performed.  Moreover, because creation commutes with linking, locking granularity can be limited to an individual entry.  (There is no reason to lock both the newly created comment and its parent entry simultaneously.)</p>
+
+<p>Without further ado, here's a locking scheme implemented at the granularity of an entry.  This would be used only for <em>writes</em>.  First, a wrapper type to hold the lock status for an entry:</p>
+
+<pre class="code">data Holder = Holder { entry :: Entry,
+                       locked :: Bool }
+            deriving (Show)</pre>
+
+<p>And then the lock/unlock code:</p>
+
+<pre class="code">lock :: Holder -> Holder
+lock (Holder e False) = Holder e True
+lock (Holder e True) = error "Already locked."
+
+unlock :: Holder -> Holder
+unlock (Holder e True) = Holder e False
+unlock (Holder e False) = error "Already unlocked."</pre>
+
+<p>It's worth stopping to observe a common construct in functional programming.  A <code>lock</code> function that locks a <code>Holder</code> can't exist because all values are immutable.  Instead, <code>lock</code> creates a new <code>Holder</code> that has <code>locked</code> set to <code>True</code> but is otherwise identical to the original, and we can use the <code>STM</code> mechanics to create actions to be applied to a <code>TVar</code>:</p>
+
+<pre class="code">check_out :: TVar Holder -> STM ()
+check_out h = do { h' &lt; readTVar h 
+                 ; if locked h'
+                   then retry
+                   else writeTVar h (lock h') }
+
+check_in :: TVar Holder -> STM ()
+check_in h = do { h' &lt; readTVar h
+                ; if locked h'
+                  then writeTVar h (unlock h')
+                  else error "Already unlocked." }</pre>
+
+<p>The <code>retry</code> above will cause <code>check_out</code> to block until the entry is checked back in, while <code>check_in</code> signals an error if it is asked to release an already free entry.</p>
+
+By the way, the following one-liner to print the <code>show</code>able value wrapped in a <code>TVar</code> is useful for experimenting with <code>STM</code> in <code>ghci</code>:
+
+<pre class="code">s_show :: Show a => TVar a -> IO String
+s_show = atomically.(liftM show).readTVar</pre>
+
+<h3>Operating on Entries</h3>
+
+<p>To integrate operations on entries, I'm going to take the minimal use case of publishing and unpublishing, so my <code>Entry</code> data structure is almost trivial:</p>
+
+<pre class="code">data Entry = Entry { entry_id :: String,
+                     published :: Bool }
+             deriving (Show)
+
+publish :: Entry -> Entry
+publish (Entry i _) = Entry i True
+
+unpublish :: Entry -> Entry
+unpublish (Entry i _) = Entry i False</pre>
+
+<p>Add in a function to convert an <code>Entry -&gt; Entry</code>
+function to a <code>Holder -&gt; Holder</code> function:</p>
+
+<pre class="code">liftH :: (Entry -> Entry) -> (TVar Holder -> STM ())
+liftH f = \ h -> do { h' &lt; readTVar h
+                    ; writeTVar h ((holderize f) h')
+                    ; return () }
+          where holderize f = \ (Holder e l) -> Holder (f e) l</pre>
+
+<p>Combining a <code>publish</code> with
+<code>check_in</code>/<code>check_out</code> is straightforward in the
+<code>STM</code> monoid.  Here's some scratch work in
+<code>ghci</code> that shows this in action:</p>
+
+<pre class="code">$ ghci -package stm
+   ___         ___ _
+  / _ \ /\  /\/ __(_)
+ / /_\// /_/ / /  | |      GHC Interactive, version 6.6, for Haskell 98.
+/ /_\\/ __  / /___| |      http://www.haskell.org/ghc/
+\____/\/ /_/\____/|_|      Type :? for help.
+
+Loading package base ... linking ... done.
+Loading package stm-2.0 ... linking ... done.
+:Prelude> :load experiment.hs
+[1 of 1] Compiling Main             ( experiment.hs, interpreted )
+Ok, modules loaded: Main.
+*Main> let h = Holder (Entry "foo" False) False
+*Main> th &lt; atomically ( newTVar h )
+*Main> s_show th
+"Holder {entry = Entry {entry_id = \"foo\", published = False}, locked = False}"
+*Main> let co = check_out th
+*Main> let pub = (liftH publish) th
+*Main> let ci = check_in th
+*Main> atomically ( co >> pub >> ci)
+*Main> s_show th
+"Holder {entry = Entry {entry_id = \"foo\", published = True}, locked = False}"</pre>
+
+<h3>Integrating Persistence via <code>IO</code></h3>
+
+<p>One of my working design assumptions is that the data for the
+system will reside entirely in memory, being updated as changes are
+made and reloaded (lazily) in the event of a system crash or system
+start-up.  (As I commented previously, four years of blogging has
+produced around 500kb of content, mark-up included, so this isn't an
+unreasonable assumption.)  Comments from spammers could produce a lot
+more data, but I plan to save every item but only load published items
+into memory.  (So spammers are just going to burn disk space.)  I'm
+going to aim for one file per entry, for the sake of the current
+discussion, named by the <code>entry_id</code> of the
+<code>Entry</code>.  Conveniently, <code>STM</code> includes the
+<code>unsafeIOToSTM</code> function for composing <code>STM</code>
+actions and <code>IO</code> actions.  (The other way around is not
+permitted by design.)</p>
+
+<p style="margin-left: 10px;margin-right: 10px; margin-top: 10px;
+margin-bottom: 10px; background-color: #eeeeee"><small><img
+align="left" src="http://mult.ifario.us/files/slippery.png"
+/><b>Attention:</b> I've gotten some public and private comments that
+<code>unsafeIOToSTM</code> is not the right thing to use in this
+scenario, so I've written a <a
+href="http://mult.ifario.us/articles/2007/03/13/stm-and-io-redux">revision</a>
+to this entry.</small></p>
+
+<p>Writing an entry to a file is straightforward:</p>
+
+<pre class="code">store :: TVar Holder -> STM ()
+store h = do { h' &lt; readTVar h
+             ; let e = entry h'
+             ; unsafeIOToSTM (writeFile (fname e) ((show e) ++ "\n")) }</pre>
+
+<p>Continuing the same <code>ghci</code> session from above:</p>
+
+<pre class="code">*Main> let out = store th
+*Main> :! cat entry-foo.hb
+cat: entry-foo.hb: No such file or directory
+*Main> atomically (  co >> pub >> out >> ci )
+*Main> :! cat entry-foo.hb
+Entry {entry_id = "foo", published = True}
+*Main> let unpub = (liftH unpublish) th
+*Main> atomically (  co >> unpub >> out >> ci )
+*Main> :! cat entry-foo.hb
+Entry {entry_id = "foo", published = False}</pre>
+
+<p>This could (and probably should) be made a bit fancier with regard to recovering from errors while writing the file, but I'm happy with the basic ergonomics so far.</p>

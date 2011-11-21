@@ -1,0 +1,26 @@
+---
+layout: default
+---
+
+<div class="nav">
+[<a href="/">front</a>] [<a href="{{ base.url }}/archive.html">archives</a>]
+</div>
+<div class="entry">
+<h2>&raquo; {{ page.title }} <a href="{{ page.url }}">#</a></h2>
+<div class="group">
+  <em><a href="mailto:me@prb.io">Paul R. Brown</a></em> @ {{ page.date | date: "%Y-%m-%d" }}
+</div>
+{{ content }}
+</div>
+<p>&nbsp;</p>
+{% if page.previous %}
+<div>
+    <a id="left" href="{{ page.previous.url }}" title="{{ page.previous.title }}">&larr; {{ page.previous.date | date: "%Y-%m-%d" }} &mdash; {{ page.previous.title }}</a>
+</div>
+  {% endif %}
+{% if page.next %}
+    <div><a id="right" href="{{ page.next.url }}" title="{{ page.next.title }}">&rarr; {{ page.next.date | date: "%Y-%m-%d" }} &mdash; {{ page.next.title }}</a></div>
+{% endif %}
+{% if page.next or page.previous %}
+<p>&nbsp;</p>
+{% endif %}

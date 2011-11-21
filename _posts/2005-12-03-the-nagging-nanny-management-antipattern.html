@@ -1,0 +1,18 @@
+---
+layout: post
+title: "The Nagging Nanny Management Antipattern"
+permalink: the-nagging-nanny-management-antipattern.html
+---
+<p><i>Never use the same communications channel to both handle load and send management information or control.</i></p>
+
+<p>Here are two instances of the Nagging Nanny Management Antipattern in action, one with MQSeries and one with Ruby on Rails.</p>
+
+<p><b>What do you get when you cross queues and topics?</b>  In the olden days of <a href="http://www.fivesight.com">FiveSight</a> (like 2000), we had an integration server product that made it relatively easy to hook JMS queues (and other sources of "messages" like directories, sockets, etc.) to business logic.  (Think of it as an early approximation to something like <a href="http://mule.codehaus.org">Mule</a> or <a href="http://servicemix.codehaus.org">ServiceMix</a>.)  The first incarnation of product the used JMS topics to transmit management messages (like "pause", "stop", "deploy") from a management console to one or more remote servers.  This was all well and good until our first MQSeries deployment (5.1, I think; more ancient history), and at the time, MQSeries simulated topics on top of its queues.  The result was that a heavily-loaded server would be unable to respond to management messages buried amongst thousands of other messages running through the same queue manager.  We refactored the design to use a separate communication pathway for management messages, and things worked as intended.</p>
+
+<p><b>Are you busy?</b>  Some folks were making a similar mistake managing web server instances at <a href="http://www.textdrive.com">TextDrive</a> recently.  A good number of users were using an innocuous looking <a href="http://textsnippets.com/posts/show/239">nanny script</a> to ensure that their instances of <a href="http://www.lighttpd.net/">lighttpd</a>/<a href="http://www.rubyonrails.org/">RoR</a> were up and running.  However, note that the nanny script asks the server how it's doing by sending a request:</p>
+
+<blockquote><pre>/usr/local/bin/curl -I http://YOURDOMAIN.com:YOURPORT</pre></blockquote>
+
+<p>Thus, if the request times out because the server's loaded down and unresponsive, the nanny script will bounce it, making the problem worse.  Some further complications with not cleaning up resources spawned by the killed <tt>lighttpd</tt> instances made it even more <a href="http://weblog.textdrive.com/article/178/fun">fun</a>.</p>
+
+

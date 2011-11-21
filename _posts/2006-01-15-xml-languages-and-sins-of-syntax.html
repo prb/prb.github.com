@@ -1,0 +1,41 @@
+---
+layout: post
+title: "XML Languages and Sins of Syntax"
+permalink: xml-languages-and-sins-of-syntax.html
+categories: [xml, languages, relaxng, bpel]
+---
+<p><a href="http://www.tbray.org">Tim Bray</a> wrote a <a href="http://www.tbray.org/ongoing/When/200x/2006/01/08/No-New-XML-Languages">post</a> about unnecessary reinvention in XML languages, arguing that the use cases are more or less covered by the &#8220;big five&#8221;: <a href="http://www.w3.org/TR/xhtml1/">XHTML</a>, <a href="http://www.oasis-open.org/committees/tc_home.php?wg_abbrev=docbook">DocBook</a>, <a href="http://www.oasis-open.org/committees/tc_home.php?wg_abbrev=office">OpenDocument</a> (so, presumedly also <a href="http://dublincore.org/">Dublin Core</a>, <a href="http://www.w3.org/Math/">MathML</a>, <a href="http://www.w3.org/Graphics/SVG/">SVG</a>, and <a href="http://www.w3.org/AudioVideo/">SMIL</a> by reference), <a href="http://www.oasis-open.org/committees/tc_home.php?wg_abbrev=ubl">UBL</a>, and <a href="http://www.ietf.org/rfc/rfc4287.txt">Atom</a>.  (I don't recall his take on the MySDL <a href="http://del.icio.us/search/?all=service+description">meme</a>, e.g., <a href="http://norman.walsh.name/2005/03/12/nsdl">NSDL</a>.)  <a href="http://copia.ogbuji.net/blog/">Uche Ogbuji</a> takes a slightly <a href="http://copia.ogbuji.net/blog/2006-01-12/Learn_how_.html">looser stance</a> and makes the excellent point that <a href="http://www.oasis-open.org/committees/relax-ng/">RELAX NG</a> plus <a href="http://www.schematron.com/">Schematron</a> can get pretty darn good (but still not great) portable validation in excess of what a DTD or (&#171;<a href="http://www.w3.org/2005/06/21-xsd-user-minutes.html">gag</a>&#187; &#171;<a href="http://www.w3.org/2005/06/22-xsd-user-minutes.html">cough</a>&#187;) XML Schema would provide.</p>
+
+<p>That said, why create an <em>XML</em> language at all, particularly if humans will directly create, modify, and consume the documents?  How will documents be created?  What is their purpose?  Who will consume them?  In what form?  What is the difference between a schema-valid document and a correct one?  (That is, can <em>all</em> of the constraints be expressed by the schema?)  Of course, before I throw too many stones, if I may paraphrase <a href="http://www.gutenberg.org/etext/901">Barabas</a> (and <a href="http://math.berkeley.edu/~stall/notPC.pdf">Stallings</a>), I have created an XML language, but that was in another country; and besides, no one else knew better at the time.  It might be just as much trouble to specify a non-XML language that's easier for humans to compose and avoids the various pitfalls of correctly processing XML with generally available tooling, to say nothing of versioning, differencing, or patching.</p>
+
+<p>Take the RELAX NG <a href="http://www.oasis-open.org/committees/relax-ng/compact-20021121.html">compact syntax</a> as a case in point for creating non-XML languages instead of XML languages.  The difference between</p>
+
+<pre class="code">&lt;element name=&#8220;addressBook&#8221; xmlns=&#8220;http://relaxng.org/ns/structure/1.0&#8221;&gt;
+  &lt;zeroOrMore&gt;
+    &lt;element name=&#8220;card&#8221;&gt;
+      &lt;choice&gt;
+        &lt;attribute name=&#8220;name&#8221;/&gt;
+        &lt;group&gt;
+          &lt;attribute name=&#8220;givenName&#8221;/&gt;
+          &lt;attribute name=&#8220;familyName&#8221;/&gt;
+        &lt;/group&gt;
+      &lt;/choice&gt;
+      &lt;attribute name=&#8220;email&#8221;/&gt;
+    &lt;/element&gt;
+  &lt;/zeroOrMore&gt;
+&lt;/element&gt;</pre>
+
+<p>and</p>
+
+<pre class="code">element addressBook {
+  element card {
+    (attribute name { text }
+     | (attribute givenName { text },
+        attribute familyName { text })),
+    attribute email { text }
+  }*
+}</pre>
+
+<p>should be obvious, and coding a few grammars in the compact and verbose formats will probably convince most people of the utility of the compact representation.  This is purely subjective, of course, but it is precisely subjective utility and aesthetics that I'm arguing.</p>
+
+<p>On the same topic, BPEL4WS 1.1 and WS-BPEL 2.0 are examples of one XML language sin committed and one in progress.  Both are programming languages, and both have an XML syntax that's just painful to type, even with a decent XML editor, and impossible to get right without additional sugar on top to ensure that namespace prefixes and WSDL component names used in expressions tie-back properly.  (Worse, some folks use <a href="http://www.it-eye.nl/weblog/2005/12/27/wysiwyg-in-bpel/">lossy</a> visual &#8220;editors&#8221;.  It's one thing to use a design tool that translates a specific visual representation of a process into BPEL, but it's quite another to try to do fine-grained visual editing of BPEL at the detail level.)  Why not something along the lines of what <a href="http://kasparov.skife.org/blog/">Brian McAllister</a> <a href="http://kasparov.skife.org/blog-live/src/java/bpelscript.writeback">proposed</a>, i.e., something that looks and feels like a programming language?  It would be straightforward to tie an <a href="http://www.antlr.org/">ANTLR</a> grammar into <a href="http://pxe.fivesight.com">PXE</a>'s compiler pipeline in place of an XML parser...</p>

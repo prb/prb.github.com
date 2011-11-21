@@ -1,0 +1,58 @@
+---
+layout: post
+title: "Peanut Butter, Jelly, and Effectiveness of Engineering Spend"
+permalink: peanut-butter-jelly-and-effectiveness-of-engineering-spend.html
+categories: [amazon, yahoo, google, engineering, efficiency, internet, peanutbutter]
+---
+<p>I spent some time in the <a href="http://www.amazon.com">jungle</a>, so it was interesting to read the Yahoo! "peanut butter" <a href="http://paul.kedrosky.com/archives/2006/11/18/yahoos_peanut_b.html">memo</a> for an inside glimpse of another one of the Internet behemoths, draw a few unfounded conclusions, and make some comparisons.  (The obligatory disclaimer here is that even when I did work for Amazon, I didn't speak for them, and I certainly don't do so now.)</p>
+
+<p>A quick digression on peanut butter.  I ate plenty of peanut butter growing up, although it was always Adam's.  Jif, Skippy, and their ilk were rightfully regarded with some disdain because of the non-food substances (e.g., "<a href="http://www.jif.com/products/details.asp?prodID=322"><em>fully</em> hydrogenated vegetable oil</a>") that they contain, but real peanut butter is generally good stuff food-wise: healthy oils, calorie-dense, high in protein.</p>
+
+<p>My first observation about the letter was that reading it was a bit like <a href="http://www.youtube.com/watch?v=m9lf5bicG1Q">a dog eating peanut butter</a>.  An SVP at an Internet major should be able to pound a diamond into dust in a few sentences.  While a problem list is good fuel for an off-site or brainstorming session, information flows up the chain and direction flows down; put another way, there were a lot of nouns but not a lot of verbs in the memo. </p>
+
+<p>My second observation was that I don't really think that Yahoo's doing so badly, even if the letter's factual in every respect.  (See, e.g., this <a href="http://www.thestreet.com/_yahoo/newsanalysis/techstockupdate/10323979.html?cm_ven=YAHOO&amp;cm_cat=FREE&amp;cm_ite=NA">commentary</a> for a "street-oriented" perspective.)  I like to look at a metric that I'll call <em>business-effectiveness of engineering</em> ("BEE"), and it's computed as:</p>
+
+<pre class="code">       1-(revenue(t)/revenue(t-Delta))
+B(t) = -------------------------------
+          1-(cost(t)/cost(t-Delta))</pre>
+
+<p>for some time range <tt>Delta</tt>, e.g., a year or other financial reporting period.  Taking the numbers from SEC filings by Google, Amazon, and Yahoo:</p>
+
+<table>
+<tr>
+<th>Symbol</th><th>2004<br />BEE</th><th>2005<br />BEE</th><th>3Q2006<br />BEE</th>
+</tr>
+<tr>
+<th><a href="http://finance.google.com/finance?q=amzn">AMZN</a></th>
+<td align="right"><small>3.10</small></td>
+<td align="right"><small>0.37</small></td>
+<td align="right"><small>0.57</small></td>
+</tr>
+<tr>
+<th><a href="http://finance.google.com/finance?q=goog">GOOG</a></th>
+<td align="right"><small>0.88</small></td>
+<td align="right"><small>0.80</small></td>
+<td align="right"><small>0.92</small></td>
+</tr>
+<tr>
+<th><a href="http://finance.google.com/finance?q=yhoo">YHOO</a></th>
+<td align="right"><small>1.56</small></td>
+<td align="right"><small>0.97</small></td>
+<td align="right"><small>0.50</small></td>
+</tr>
+</table>
+
+<p>The 3Q2006 number is computed versus the 3Q2005 number.  I've pulled numbers from the financial roll-ups in the 2005 10-K (<a href="http://www.sec.gov/Archives/edgar/data/1018724/000119312506034166/0001193125-06-034166-index.htm">AMZN</a>, <a href="http://www.sec.gov/Archives/edgar/data/1288776/000119312506056598/0001193125-06-056598-index.htm">GOOG</a>, <a href="http://www.sec.gov/Archives/edgar/data/1011006/000110465906014033/0001104659-06-014033-index.htm">YHOO</a>) and 3Q2006 10-Q filings (<a href="http://www.sec.gov/Archives/edgar/data/1018724/000119312506215188/d10q.htm">AMZN</a>, <a href="http://www.sec.gov/Archives/edgar/data/1288776/000119312506228163/d10q.htm">GOOG</a>, <a href="http://www.sec.gov/Archives/edgar/data/1011006/000110465906071213/a06-21898_110q.htm">YHOO</a>).  (I should add <a href="http://www.sec.gov/Archives/edgar/data/1065088/000095013406019858/f24230e10vq.htm">eBay</a> to the list, but maybe later; for comparison, their BEE for 3Q2006 is 0.91.  <a href="http://www.sec.gov/Archives/edgar/data/1108524/000119312506238445/d10q.htm">Salesforce.com</a> has a 3Q2006 BEE of 0.82.)</p>
+
+<p>The numbers suggest that Yahoo's and Amazon's core business models, vis &agrave; vis their ability to execute in terms technology and engineering, are essentially at end of life, since it costs $0.50 of engineering labor to buy $1.00 of revenue.  (Yahoo is profitable and could afford to spend significantly on growth if the raw materials (i.e., smart people) are available in sufficient supply; Amazon has less fiscal wiggle room.)  This shouldn't be surprising &#8212; it takes a lot of software to run a big Internet business, and there's a pretty good chance that not all of it was written by top-notch folks working under clean-room conditions...  That said, Amazon is trying to leverage its core expertise in operating its server fleet (and they are very good at it) into new lines of business (<a href="http://www.amazon.com/s3">S3</a>, <a href="http://www.amazon.com/ec2">EC2</a>, etc.), and all three have been rolling-up customers, partners, or players in their respective spaces: Amazon is <a href="http://www2.marksandspencer.com/thecompany/mediacentre/pressreleases/2005/com2005-04-19-01.shtml">consolidating</a> online retail, Yahoo is <a href="http://www.nytimes.com/2006/11/20/technology/20yahoo.html">consolidating</a> social and personal software, and Google is consolidating the on-line advertising business.</p>
+
+<p>The prescription for Yahoo seems simple enough:</p>
+
+<ul>
+<li>Consolidate.  Keep the peanuts and salt but flush any fillers that accumulated after the last bust.</li>
+<li>Avoid a money fight with Google by innovating from within, strategic investing, or grabbing properties early.  (Not buying YouTube was a miss; knowing that video sharing was hot and not already having or owning a hunk of a parallel property is a bigger miss.)</li>
+<li>Ensure that offerings are readily identifiable and usable by regular folks.  Having two photo sharing services isn't a sin, but having any difficult to use, locate, or understand services is.</li>
+<li>Use social context (rather than keyword inference) to target advertising.</li>
+</ul>
+
+<p>As for just how to do it, since I'm not an SVP at Yahoo, I'm not on the hook for that part...</p>

@@ -1,0 +1,11 @@
+---
+layout: post
+title: "WS-Reliability, the Latest Installment in WS-Everything"
+permalink: ws-reliability-the-latest-installment-in-ws-everything.html
+categories: [wsstar, wsreliability]
+---
+<p><a href="http://www.oasis-open.org">OASIS</a> just <a href="http://lists.oasis-open.org/archives/members/200302/msg00013.html">announced</a> a TC for WS-Reliability.  The <a href="http://otn.oracle.com/tech/webservices/htdocs/spec/WS-ReliabilityV1.0.pdf">specification</a> is a reasonable 45 pages and has some real-world features like sequence numbering built into the specification.</p>
+
+<p>The thing to do is see if it's reasonable by roughing out an implementation, but at first glance, it looks like good old reliable messaging with SOAP-based semantics.</p>
+
+<p>It would probably be better to straighten out transport protocol (as opposed to data protocol) issues first, since reliable messaging over unreliable protocols doesn't make a lot of sense.  It's still nice to have a simple and general specification to work with, and the ubiquity of HTTP is unassailable.</p>

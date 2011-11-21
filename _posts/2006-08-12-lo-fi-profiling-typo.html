@@ -1,0 +1,36 @@
+---
+layout: post
+title: "Lo-Fi Profiling of Typo"
+permalink: lo-fi-profiling-typo.html
+categories: [ruby, profiler, memory, performance, hacks, typo, textdrive, jvmti]
+---
+<p>For anyone who's been wondering why this blog has been up and down over the past week, it's a slow-motion battle between the memory police at <a href="http://www.textdrive.com">TextDrive</a> killing <a href="http://www.typosphere.org">Typo</a> instance that hosts the blog and either a FastCGI dispatcher or  a <a href="http://mult.ifario.us/articles/2006/01/28/a-nanny-for-typo">nanny</a> cron job starting it back up.  The onus is clearly on me to figure out what's burning memory, and my first inclination was to naively google for Ruby profilers.  Here's a rambling account of what I did to conclude that I'm probably out of luck as far as a quick cure for the issues and then to address them.</p>
+
+<p>There are a couple of speed-oriented Ruby performance profilers, the <a href="http://rubygarden.org/ruby?Ruby_Profiler">built-in</a> one and <a href="http://ruby-prof.rubyforge.org/">ruby-prof</a>, but there are no space-oriented profilers.  There was a <a href="http://raggle.org/pipermail/raggle-dev/2003-August/000086.html">brute-force approach</a> based on <a href="http://www.rubycentral.com/book/ref_m_objectspace.html"><tt>ObjectSpace.each_object</tt></a> in an old mailing list post from Michael Garniss that looked suitable, so I integrated it into the main controller in Typo as an <tt>after_filter</tt> and fired-up several concurrent  <tt>wget</tt> commands to walk around on a production configuration on my development box at home:</p>
+
+<pre class="code">while true; \
+do wget -nv -r --delete-after http://localhost:3000; \
+done</pre>
+
+<p>(There is no reason to try to set it on fire with something like <a href="http://httpd.apache.org/docs/2.0/programs/ab.html"><tt>ab</tt></a>.)  That won't catch any issues with the vanilla two dispatcher <a href="http://www.lighttpd.net/">lighttpd</a>/<a href="http://www.fastcgi.com/">FastCGI</a> configuration that I use on Textdrive, but it should catch any issues with Typo internals, badly behaved sidebars, etc.</p>
+
+<p>With the profiling code integrated, a request that includes the dump takes several seconds to complete, and there are several hits per page; so I added a class variable (<tt>@@no_sooner_than</tt>) and a little logic so that profiling requests would only run once a minute or so.  With several <tt>wget</tt> walkers working, <tt>top</tt> reports that the server runs along at a happy 80-90Mb, and eyeballing the profiling output shows memory usage oscillating between &lt;7Mb and ~20Mb without any perceptible upward trend over the course of an hour and a half.  (That said, that's all the data I captured, as <a href="http://www.webrick.org/">WEBrick</a> locked up completely after that hour and a half.)</p>
+
+<p>Armed with the information that there wasn't an easy fix for the memory issues, I switched the FastGCI configuration for the production instance to a single dispatcher from the previous two, pointed a couple of <tt>wget</tt> walkers at it, and tracked memory usage and process id at the commandline, like so:</p>
+
+<pre class="code">while true; \
+do ps mux | grep ruby | grep -v grep; \
+read -t 30; done</pre>
+
+<p>I also changed the <tt>wget</tt> walker command to provide more useful information:</p>
+
+<pre class="code">wget -S -r -b -l 4 --delete-after http://mult.ifario.us \
+-a /tmp/log_id</pre>
+
+<p>where <tt>id</tt> is a unique number per walker, and so far, so good.  Crunching the <tt>wget</tt> output through shell commands (<tt>awk</tt>, <tt>grep</tt>, <tt>cut</tt>, <tt>sort</tt>, <tt>uniq&#160;-c</tt>, etc.), e.g.:</p>
+
+<pre class="code">cat log* | grep HTTP/1.1 | cut -f 4 -d ' ' | sort | uniq -c</pre>
+
+<p>says that mult.ifario.us is consistently returning snappy HTTP/1.1 200 responses about two nines (99.x%) of the time, which isn't great but isn't awful.  (Really it's more like 2.5 nines, i.e., &minus;log<sub>10</sub>(0.003), but who's counting?)</p>
+
+<p>This is one time when I've missed some of the Java runtime environment's capabilities (i.e., the <a href="http://java.sun.com/j2se/1.5.0/docs/guide/jvmti/jvmti.html">JVMTI</a>) in other language runtimes, but no rocket science was required to get Typo under control.</p>

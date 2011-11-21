@@ -1,0 +1,30 @@
+---
+layout: post
+title: "perpubplat now on github"
+permalink: perpubplat-now-on-github.html
+categories: [git, github, darcs, haskell, perpubplat]
+---
+
+<p>With GHC <a
+href="http://www.haskell.org/pipermail/cvs-ghc/2008-August/043999.html">switching</a>
+from <a href="http://darcs.net/">darcs</a> to <a
+href="http://git.or.cz/">git</a>, I decided to move perpubplat over to
+git (and specifically to <a href="http://github.com">github</a>) as
+well. (For the reasons that GHC decided to move, see this <a
+href="http://hackage.haskell.org/trac/ghc/wiki/DarcsEvaluation">wiki
+page</a>.)  The new landing page for the perpubplat repository is <a href="http://github.com/prb/perpubplat">here</a>.</p>
+
+<p>At least if you've already got git, GHC 6.8.3, and <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/cabal-install">cabal-install</a>,
+building perpubplat is about as simple as it can get:</p>
+
+<pre class="code">$ git clone git://github.com/prb/perpubplat.git
+$ cd perpubplat
+$ cabal install</pre>
+
+<p>As far as near-future feature development, I'll be adding github
+activity feeds to "stream of consciousness" <a
+href="http://github.com/prb/perpubplat/tree/master/src/Blog/Widgets/StreamOfConsciousness">aggregation</a>
+and improving the configuration and control of aggregation in
+general.</p>
+

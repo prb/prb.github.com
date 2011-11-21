@@ -1,0 +1,72 @@
+---
+layout: post
+title: "Integrating Github and Redmine"
+permalink: integrating-github-and-redmine.html
+categories: [git, redmine, github]
+---
+
+<p>I've been a fan and user of Atlassian's excellent <a
+href="http://www.atlassian.com/software/jira/">Jira</a> since the
+company was founded back in 2002, but I needed the ability to set up
+some quick-hit bug/task/wiki sites for smaller consulting projects and
+neither the month-to-month hosted model nor the enterprise license
+made good economic sense.  I opted for the an install of <a
+href="http://www.redmine.org/">Redmine</a>, and while it's no Jira,
+I've been reasonably happy with it.  (The one big headache was getting
+SMTP over TLS working.)</p>
+
+<p>Redmine supports integration with <a
+href="http://www.git-scm.org/">Git</a> repositories on a per-project
+basis and will link commits to issues based on the presence of
+keywords and issue identifiers (e.g., "<code>refs #123</code>").  The
+way the integration is implemented works well if the Git repository is
+hosted on the same machine as the Remine instance, but I host all
+customer and internal work on <a href="http://github.com">github</a>.
+Here's a quick recipe to bridge the gap.</p>
+
+<p>First, add an ssh key for the <code>redmine</code> user to your
+github account.</p>
+
+<p>Next, create a home for the following shell script, e.g.,
+<code>/opt/redmine_extras/bin</code> and a home for Git repositories
+on the server, e.g., <code>/var/redmine/git_repositories</code> and
+ensure that the <code>redmine</code> user has write privileges for the
+repositories.  Here's the <code>pull_git</code> script:</p>
+
+<pre class="code">#!/bin/bash
+export REPOS=/var/redmine/git_repositories
+export REDMINE_HOME=/opt/redmine-0.8.2
+export LOGFILE=/var/log/redmine_extras.log
+
+function log_prefix {
+        echo -n `date '+%Y/%m/%d %H:%M:%S'`" ["$$"] ${2}"
+}
+
+for i in `ls -d ${REPOS}/*.git`; do 
+  cd $i;
+  log_prefix &amp;&amp; echo 'Processing git repository from '${i}'...';
+  /usr/local/bin/git --bare fetch origin :master
+done
+
+cd ${REDMINE_HOME}
+log_prefix &amp;&amp; echo 'Updating Redmine...'
+/usr/local/bin/ruby script/runner "Repository.fetch_changesets" -e production</pre>
+
+<p>Then (I'm logged in as <code>root</code>) add the command to the
+<code>redmine</code> user's crontab:</p>
+
+<pre class="code"># echo '*/10 * * * *    /opt/redmine_extras/bin/pull_git 2&gt;&amp;1 &gt;&gt; /var/log/redmine_extras.log'\
+ | crontab -u redmine -</pre>
+
+<p>Now, for each repository, say <code>foo</code> and your github user
+is <code>bar</code>, you will track from Redmine, do:</p>
+
+<pre class="code"># cd /var/redmine/git_repositories
+# sudo -u redmine -H git clone --bare git@github.com:bar/foo.git
+# cd foo.git
+# sudo -u redmine -H git --bare remote add origin git@github:bar/foo.git</pre>
+
+<p>Ensure that the Redmine project points to the local copy of the
+Git repository, and the revisions should start getting syncronized
+every ten minutes.</p>
+

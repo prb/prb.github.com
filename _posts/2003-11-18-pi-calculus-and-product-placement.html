@@ -1,0 +1,35 @@
+---
+layout: post
+title: "Pi Calculus and Product Placement"
+permalink: pi-calculus-and-product-placement.html
+categories: [bpel, workflow, picalculus, bpm, joincalculus, wfmc, vanderaalst, choreography, math]
+---
+<p>Peter Fingar and Howard Smith have published a short <a href="http://www.bpm3.com/picalculus/workflow-is-just-a-pi-process.pdf">paper</a> entitled <i>Workflow is Just a Pi Process</i> and publicized it with a <a href="http://lists.w3.org/Archives/Public/public-ws-chor/2003Nov/0011.html">message</a> on the W3C Choreography <a href="http://lists.w3.org/Archives/Public/public-ws-chor/">mailing list</a> and a <a href="http://lists.oasis-open.org/archives/wsbpel/200311/msg00084.html">message</a> on the BPEL TC <a href="http://lists.oasis-open.org/archives/wsbpel/">mailing list</a>. (I will at some point have to read <a href="http://www.amazon.com/exec/obidos/tg/detail/-/0929652339">BPM: The Third Wave</a>, but it's deep in the queue.)</p>
+
+<h4>Point?</h4>
+
+<p>It would be easier to take the paper seriously if the key reference were available for review and if it didn't do product placement for Intalio every few paragraph...  (Product placement in a semi-serious piece of work is an interesting concept: I wish I had thought about financing my academic research by, e.g., naming variables <tt>Coke</tt> and <tt>Sprite</tt> instead of <tt>foo</tt> and <tt>bar</tt> or using specific makes of automobile in sample problems.  <a href="http://www.nsf.gov/">NSF</a> funding comes and goes, but people always drink Coke...)  Nonetheless, the paper may contain an idea, and that's pretty good - for discussion at the least.  (I attribute the quip that "most papers contain at most one idea while good papers contain at least one" to <a href="http://www-gap.dcs.st-and.ac.uk/~history/Mathematicians/Serre.html">J.P. Serre</a>.)</p>
+
+<h4>Counterpoint(s)</h4>
+
+<p>The Smith/Fingar paper takes some pretty broad strokes at workflow and at pi calculus, and there are already enough well-qualified people taking the other side of the discussion that I probably won't add anything productive:</p>
+
+<ul>
+
+<li><a href="http://tmitwww.tm.tue.nl/staff/wvdaalst/">Wil van der Aalst</a> has been thinking about this sort of thing for a while and has a website dedicated specifically to workflow patterns. After being <a href="http://lists.oasis-open.org/archives/wsbpel/200311/msg00096.html">attacked</a> by Smith on the BPEL list, Wil van der Aalst supplied a <a href="http://lists.w3.org/Archives/Public/public-ws-chor/2003Nov/0024.html">response</a> on the choreography list.</li>
+
+<li>The paper also provoked a response from the <a href="http://www.wfmc.org/">WfMC</a>. The <a href="http://www.wfmc.org/standards/docs/better_maths_better_processes.pdf">paper</a> is titled <i>Does Better Math Make Better Business Process?</i> and is written by Jon Pyke, the WfMC Chair, and Roger Whitehead, the director of <a href="http://www.office-futures.com/">Office Futures</a>.</li>
+
+<li>The fact is that pi calculus, with some enhancements, is well-suited to modeling workflow-type interactions, but just what the "best" set of enhancements is (with respect to usability and economy of expression) and how one maps an agreeable XML description language (e.g., BPEL) into executable units isn't so plainly obvious. (People have invested significant thought just into enhancements; see, e.g., <a href="http://join.inria.fr/">join calculus</a>.)</li>
+</ul>
+
+<h4>The Point</h4>
+<p>The point is the commonly-held vision that process orientation will be a next step for software engineering where a new abstraction will subsume (some of) the current complexity associated with state, communication, and description. Compilers and object-oriented languages represent earlier advancements, and it's worth recognizing the difference between the aesthetically ideal approaches and the ones that won in the marketplace.</p>
+
+<p>In fact, the execution back-end should not be the focus of a business process management or workflow management vendor, since whatever output a design tool generates can probably be mapped into a number of different execution models. (This doesn't address runtime management, retrospective analytics, and notifications, but those can also be built modularly on top of a clean implementation of an execution environment.) Vendors will compete and customers will (and currently do, by and large) make selections based on the richness of the business functionality (localization, security, identity, rules, AI,...) that a system provides as well as the accompanying methodology for modeling and remodeling processes.</p>
+
+<h4>It's Not All Bad...</h4>
+
+<p>As a former mathematician, I'm happy whenever anyone gets out the pompoms for something that involves regular languages, automata, graphs, etc., even if it reads more like a marketing piece than (somewhat) serious work. If it involves a spectacularly complex way to add numbers, so much the better. I also love detail, precision, and thorough argument.</p>
+
+<p>I will be very happy if pi calculus replaces <a href="http://www-gap.dcs.st-and.ac.uk/~history/HistTopics/Fermat's_last_theorem.html">Fermat's Last Theorem</a>, <a href="http://us.imdb.com/title/tt0119217/">Good Will Hunting</a>, <a href="http://us.imdb.com/title/tt0268978/">A Beautiful Mind</a>, or (please please please) fractals as the standard conversation that follows "Oh, so you're a mathematician..." at cocktail parties. (It's like asking a cardiologist about bunyons.) Just the same, if I wasn't busy, I actually enjoyed the people who used to knock on my office door with a proof that &pi; (3.1415..., you know) was a rational number, a proof that <em>P=NP</em>, or even the occasional chemist or physicist with an interesting geometry problem.) Ultimately, interest will generate <a href="http://www.aimath.org/">funding</a> for fundamental research, and that's good.</p>

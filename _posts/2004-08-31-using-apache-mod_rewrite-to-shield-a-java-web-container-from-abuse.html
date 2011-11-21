@@ -1,0 +1,58 @@
+---
+layout: post
+title: "Using Apache mod_rewrite  to Shield a Java Web Container from Abuse"
+permalink: using-apache-mod_rewrite-to-shield-a-java-web-container-from-abuse.html
+---
+<p>The old version of <a
+href="http://blog.fivesight.com/prb">pbblog</a> got hammered with
+around 5,000 hits in under an hour this morning from some spammer
+trying to generate referrer links.  That kind of load is neither
+healthy for the Jetty instance hosting it nor for the <a
+href="http://www.johncompanies.com">virtual server</a> it's running
+on, and it's not the kind of thing I'd like to burn bandwidth and CPU
+on.  (5,000 hits times 20k = 100M.)  SnipSnap already provides <a
+href="http://snipsnap.org/comments/SnipSnap/blacklist/referrer">blacklist</a>
+functionality (<a
+href="http://blog.fivesight.com/prb/space/Snipsnap/blacklist/referrer">here</a>'s
+my blacklist), but that doesn't prevent the request from being
+serviced.</p>
+
+<p>The thing to do is intercept the undesired traffic at the Apache
+proxy.  I used to have the standard Apache <code>mod_proxy</code>
+setup as <a
+href="http://jakarta.apache.org/tomcat/tomcat-5.0-doc/proxy-howto.html">recommended</a>
+by Tomcat, but <code>mod_rewrite</code> can provide the same
+functionality (presuming that <code>mod_proxy</code> is
+installed):</p>
+
+<pre class="code">&lt;VirtualHost *&gt;
+  ServerName blog.fivesight.com
+  &lt;IfModule mod_rewrite.c&gt;
+    RewriteEngine On
+    [... RewriteMap declarations go here ...]
+    [... RewriteCond entries for badly behaved REMOTE_HOST,
+         REMOTE_ADDR, HTTP_USER_AGENT, and HTTP_REFERER go
+         here ...]
+    RewriteRule ^.*$ - [F,L]
+    RewriteRule ^/prb$ /prb/
+    RewriteRule ^prb/(.*)$ http://127.0.0.1:xxxx/prb/$1 [P,L]
+    RewriteRule ^.+$ http://www.fivesight.com [R]
+  &lt;/IfModule&gt;
+&lt;/VirtualHost&gt;</pre>
+
+<p>The line that ends with <code>[P,L]</code> replaces the
+<code>ProxyPass</code> and <code>ProxyPassReverse</code> entries that
+would be used with <code>mod_proxy</code>.  This means that instead of
+an HTTP 200 with 25k of content proxied from the Jetty instance, the
+spammer sees an HTTP 403 with 300 bytes of content and the Jetty
+instance is none the wiser.</p>
+
+<p>If you're going to do this yourself, the two tools that I found
+most useful were the standard Apache <a
+href="http://www.apache.org/docs/mod/mod_rewrite.html">reference</a>
+and Ralf Engelschall's <a
+href="http://www.engelschall.com/pw/apache/rewriteguide/">guide</a>
+that includes a number of <code>mod_rewrite</code> recipes.  (Tom
+Moertel's Perl <a
+href="http://community.moertel.com/ss/space/2004-03-18">recipe</a> is
+worth a look, too.)</p>

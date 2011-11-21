@@ -1,0 +1,36 @@
+---
+layout: post
+title: "GHC 6.6 and Mac OS X Readline Quick Fix"
+permalink: ghc-6-6-and-mac-os-x-readline-quick-fix.html
+categories: [ghc, haskell, macosx, readline]
+---
+<p>If you build vanilla <a href="http://www.haskell.org/ghc/docs/6.6/html/users_guide/release-6-6.html">GHC 6.6</a> from the source tarball on Mac OS X (non-Intel), it will build straight through with no issues, but the <code>ghci</code> commandline interface will drive you crazy because it lacks support for editing.  This is due to a damaged <code>readline</code> that ships with Mac OS X, but here's a quick fix.  The first step is installing an up-to-date version of <a href="http://tiswww.tis.case.edu/~chet/readline/rltop.html">GNU readline</a> into <code>/usr/local</code> with the usual recipe:</p>
+
+<pre class="code">cd ~/work
+mkdir gnu-readline
+cd !$
+wget ftp://ftp.cwru.edu/pub/bash/readline-5.2.tar.gz
+tar xzvf readline-5.2.tat.gz
+cd readline-5.2
+./configure
+make &amp;&amp; sudo make install</pre>
+
+<p>(I keep a copy of the source for any modules that I build from scratch.)  The second step is <a href="http://www.mail-archive.com/cvs-all@haskell.org/msg26887.html">courtesy</a> of <a href="http://www.cse.ogi.edu/~andy/">Andy Gill</a>:</p>
+
+<pre class="code">cd ~/work
+mkdir ghc
+cd !$
+wget http://www.haskell.org/ghc/dist/6.6/ghc-6.6-src.tar.bz2
+wget http://www.haskell.org/ghc/dist/6.6/ghc-6.6-src-extralibs.tar.bz2
+tar xjvf ghc-6.6-src.tar.bz2
+tar xjvf ghc-6.6-src-extralibs.tar.bz2
+cd ghc-6.6
+./configure --with-readline-includes=/usr/local/include \
+            --with-readline-libraries=/usr/local/lib
+make -j &amp;&amp; sudo make install</pre>
+
+<p>This is one of those little joys of <code>configure</code>: flags are passed down to the libraries from the master build, but available options are not bubbled up to <code>./configure&#160;--help</code>.  You'd have no idea about the availability of the <code>readline</code>-related flags unless you looked at the library.</p>
+
+<p>Of course, you can also use <a href="http://fink.sourceforge.net/">Fink</a> or <a href="http://darwinports.opendarwin.org/">DarwinPorts</a> and pass the appropriate directories to <code>configure</code> instead.</p>
+
+<p>Building from source takes a long time, no matter what kind of machine you've got.  If you've got a multi-processor or multi-core machine, <code>make&#160;-j</code> (as many concurrent jobs as <code>make</code> feels like running) will help cut the time down.  It takes under an hour on my four-way G5 with <code>-j</code> and several hours without.  (Don't bother with <code>-j</code> without also cranking up the number of processes, e.g., <code>ulimit -u 512</code>, which beats the anemic default of 100 on Mac OS.)</p>

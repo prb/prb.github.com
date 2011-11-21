@@ -1,0 +1,13 @@
+---
+layout: post
+title: "Concurrency != Threads"
+permalink: concurrency-threads.html
+categories: [concurrency, threads, dijkstra, literateprogramming]
+---
+<p>A recent <a href="http://www.eecs.berkeley.edu/Pubs/TechRpts/2006/EECS-2006-1.html">paper</a> from <a href="http://ptolemy.eecs.berkeley.edu/~eal/">Edward Lee</a> at UC Berkeley takes a position against threads as a model for concurrent systems.  From the abstract:</p>
+
+<blockquote>[...] Many technologists are pushing for increased use of multithreading in software in order to take advantage of the predicted increases in parallelism in computer architectures. In this paper, I argue that this is not a good idea. Although threads seem to be a small step from sequential computation, in fact, they represent a huge step. They discard the most essential and appealing properties of sequential computation: understandability, predictability, and determinism. [...]</blockquote>
+
+<p>There is a lot to think about in Lee's paper, but I concur with its thesis.  The <a href="http://www-cs-faculty.stanford.edu/~uno/lp.html">purpose</a> of a computer language is to express in <em>human-intelligible terms</em> the intended behavior of a machine, and by that measurement, threads fail as a mechanism for expressing concurrency.  (I'll take Dijkstra's <a href="http://www.cs.utexas.edu/users/EWD/ewd04xx/EWD476.PDF">definition</a> of "concurrency", i.e., that there is the "(possibility) of simultaneous activity".)</p>
+
+<p>See the <a href="http://lambda-the-ultimate.org/node/1481">discussion</a> on <a href="http://lambda-the-ultimate.org/">LtU</a> for more commentary on the paper.  I'll have more to say about concurrency in Java without threads later this week.</p>

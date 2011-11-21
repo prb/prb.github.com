@@ -1,0 +1,64 @@
+---
+layout: post
+title: "Administrivia"
+permalink: administrivia.html
+categories: [administrative, perpubplat, typo]
+---
+
+<p>I've switched my publishing engine from Typo to a home-brew
+platform called "perpubplat" which appears to be stable enough (i.e.,
+better than Typo) but will remain a work in progress.  (I'll post more
+on perpubplat later; I'm happy to share source code with folks and
+will post <a href="http://darcs.net/">Darcs</a> repository information
+once I've cleaned things up a bit.)</p>
+
+<p>Of relevance to feed subscribers (and perhaps how you ended up
+here):</p>
+
+<ul>
+
+<li><a href="http://cyber.law.harvard.edu/rss/rss.html">RSS</a> feeds
+are no longer provided in any form.  What would have been a request
+for an RSS feed directs to an Atom feed containing this post.</li>
+
+<li>As a corollary of the non-existence of RSS, <a
+href="http://cyber.law.harvard.edu/rss/rss.html#ltcategorygtSubelementOfLtitemgt">categories</a>
+(as semantic artifacts of RSS) no longer exist.  Instead, you can pick
+out a relevant by-tag feed, e.g., for posts tagged <a
+href="http://mult.ifario.us/t/haskell">Haskell</a>, <a
+href="http://mult.ifario.us/t/java">Java</a>, or <a
+href="http://mult.ifario.us/t/entrepreneurship">entrepreneurship</a>.
+(For any by-tag or by-date view, there is an associated feed available
+via <a
+href="http://philringnalda.com/rfc/draft-ietf-atompub-autodiscovery-01.html">autodiscovery</a>.)</li>
+
+<li>Comment feeds by article internal identifier are no longer
+supported.  (Comment feeds by article are supported with a different,
+permatitle-based URI; check the autodiscovery links on a single
+article page.)</li>
+
+</ul>
+
+<p>Of relevance to visitors:</p>
+
+<ul>
+
+<li>For the time being, new comments aren't supported directly on this
+blog, but that shouldn't stop you from commenting on your own blog or
+posting to a community site like <a
+href="http://programming.reddit.com">Reddit</a> or <a
+href="http://www.dzone.com/links/">DZone</a>.  The plumbing for
+comments (as well as trackbacks and backreferences) is present, but I haven't decided how I want to restrict
+content and control spam yet.  Historical comments and trackbacks
+are present.</li>
+
+<li>I've made some effort (i.e., using <a
+href="http://feedvalidator.org/">FeedValidator</a> and <a
+href="http://www.xmlsoft.org/xmllint.html"><code>xmllint</code></a>)
+to ensure that specification compliance is provided when advertised,
+including cleaning up the content of older posts, but please <a
+href="mailto:paulrbrown@gmail.com">let me know</a> if something falls
+short.</li>
+
+</ul>
+

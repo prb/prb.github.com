@@ -1,0 +1,449 @@
+---
+layout: post
+title: "New Features for Perpubplat and Ruminations on Service APIs for the Web"
+permalink: new-features-for-perpubplat-and-ruminations-on-service-apis-for-the-web.html
+categories: [haskell, perpubplat, del.icio.us, twitter, reddit, googlereader, rss, atom, json, hxt, simplehttp]
+---
+
+<p>I've added some new features to <a
+href="http://datapr0n.com/perpubplat">perpubplat</a>, and each one
+presented a nice exercise in Haskell, working with Haskell libraries,
+and the design and consumption of web APIs.</p>
+
+<h3>Collage of Random Flickr Photos</h3>
+
+<p><img style="float: left; margin-right: 5px; margin-bottom: 5px;" alt="Flickr Sidebar screenshot" src="http://mult.ifario.us/files/flickr_screenshot.png" />The first feature is the collage of photos that uses the <a
+href="http://www.flickr.com">Flickr</a> <a href="http://www.flickr.com/services/api/">JSON API</a>.  The
+collage appears at the bottom of the sidebar under the "Photos"
+heading.</p>
+
+<p>The implementation of the collage
+(<code>Blog.Widgets.FlickrCollage</code>; source <a
+href="http://datapr0n.com/repos/perpubplat/src/Blog/Widgets/FlickrCollage.hs">here</a>)
+uses a polite (i.e., supports conditional GET) HTTP poller
+(<code>Blog.BackEnd.HttpPoller</code>; source <a
+href="http://datapr0n.com/repos/perpubplat/src/Blog/BackEnd/HttpPoller.hs">here</a>)
+to call <code>flickr.people.getPublicPhotos</code> (docs <a
+href="http://www.flickr.com/services/api/flickr.people.getPublicPhotos.html">here</a>)
+every fifteen minutes and pull down the data for my most recent 500
+photos. (I'll discuss the HTTP poller below.) To deal with concurrency
+&#8212; many readers (HTTP requests) and one writer (the polling
+thread) &#8212; an <code>MVar</code> holds the list of photos, with
+the writer taking the old value and putting the new and the reader
+taking the old value and then putting it right back. The
+implementation of <code>MVar</code> ensures that waiters are awakened
+in FIFO order, so this should (and does) work great.</p>
+
+<p>The <a
+href="http://datapr0n.com/repos/perpubplat/json/src/Text/Json.hs">JSON
+parser</a> that I've been using uses Haskell's datatype polymorphism
+to model polymorphism in JSON, and this means that you work with
+wrapped (JSON <code>Array</code> wrapped around a list, JSON
+<code>String</code> wrapped around a Haskell <code>String</code>,
+etc.) primitive values instead of primitive values.  To make things a
+little more ergonomic, I've bundled up some one-line utility functions
+in <code>Blog.Widgets.JsonUtilities</code> (source <a
+href="http://datapr0n.com/repos/perpubplat/src/Blog/Widgets/JsonUtilities.hs">here</a>).
+My favorite of the bunch is <code>&lt;/&gt;</code>:</p>
+
+<pre class="code">(&lt;/>) :: J.Value -> String -> J.Value
+(J.Object o) &lt;/> s = o M.! s
+(J.Array a) &lt;/> s = J.Array $ map (flip (&lt;/>) $ s) a</pre>
+
+<p>This makes it possible to compactly express access to nested JSON
+objects.  For example, from the Flickr integration:</p>
+
+<pre class="code">to_photo :: J.Value -> FlickrPhoto
+to_photo m = FlickrPhoto { photo_id = uns $ m &lt;/> "id"
+                         , owner = uns $ m &lt;/> "owner"
+                         , secret = uns $ m &lt;/> "secret"
+                         , server = uns $ m &lt;/> "server"
+                         , photo_title = uns $ m &lt;/> "title"
+                         , farm = unn $ m &lt;/> "farm" }</pre>
+
+<p>The <code>uns</code> function pulls the value out of a wrapped JSON
+<code>String</code>, and the <code>unn</code> function pulls the value
+out of a wrapped JSON <code>Number</code>.  With a bit more thought,
+someone could probably come up with a nice library for JSON handling
+along the lines of <a
+href="http://www.jaql.org/jaql-overview.html">Jaql</a> or something
+like <a href="http://wiki.apache.org/pig/PigLatin">Pig Latin</a>.</p>
+
+<h3>HTTP Polling</h3>
+
+<p>My rough cut at an HTTP polling library built on top of
+<code>Network.HTTP</code> is <code>Blog.BackEnd.HttpPoller</code> (source <a
+href="http://datapr0n.com/repos/perpubplat/src/Blog/BackEnd/HttpPoller.hs">here</a>),
+and it supports the bare minimum of features that I needed:</p>
+
+<ul>
+
+<li>Call a supplied function with signature <code>String -> IO ()</code> with the body of a <code>200</code> response and ignore others.</li>
+
+<li>Use "conditional GET" (<a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec9#sec9.3">RFC
+2616, section 9.3</a>) via <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.19"><code>ETag</code></a>/<a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.26"><code>If-None-Match</code></a>
+and <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.29"><code>Last-Modified</code></a>/<a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.25"><code>If-Modified-Since</code></a>.</li>
+
+<li>Support for basic authentication via a header configured on the
+template request passed to the poller.</li>
+
+<li>Tolerant of temporary failures but able to gracefully exit.</li>
+
+<li>Detailed-enough logging in case APIs, endpoints, or policies
+change.  (I omitted redirect support on purpose.)</li>
+
+</ul>
+
+<h3>del.icio.us Bookmarks on an Entry</h3>
+
+<p>The second feature is integration with <a
+href="http://del.icio.us">del.icio.us</a> bookmarks pointing to an
+entry via the <a href="http://del.icio.us/help/json/posts">del.icio.us
+JSON API</a>, and it shows up as a trailer on entries in the detail
+view:</p>
+
+<p style="text-align: center;"><img alt="del.icio.us entry trailer screenshot" src="http://mult.ifario.us/files/delicious_screenshot.png" /></p>
+
+<p>I've already blogged about most of the interesting stuff from
+integrating with the del.icio.us JSON API using
+<code>Network.HTTP</code>; see <a
+href="http://mult.ifario.us/p/haskell-del-icio-us-and-json">Haskell,
+del.icio.us, and JSON</a> (encodings and non-standard JSON) and <a
+href="http://mult.ifario.us/p/a-short-adventure-with-simplehttp">A
+Short Adventure with <code>simpleHTTP</code></a> (unclosed
+sockets).</p>
+
+<p>The part I didn't cover was how to schedule queries against
+del.icio.us, and I'll probably go back to both simplify and enhance
+it.  As present, it's a bit convoluted; three threads interact as
+follows:</p>
+
+<ol>
+
+<li>The <em>driver</em> triggers the <em>scheduler</em> on a fixed interval.</li>
+
+<li>The <em>scheduler</em> manages an ordered list of scheduled times
+and entries.  In response to a trigger from the <em>driver</em>, if
+the head of the list is past due, the <em>scheduler</em> pops the head
+of the list, refreshes the data about bookmarks for that entry, sends
+it to the <em>controller</em>, and schedules the next refresh for that
+entry based on its age in days.  The <em>scheduler</em> also receives
+information about new entries and adds them to the schedule.</li>
+
+<li>The <em>controller</em> manages a <code>Data.Map</code> of data
+about bookmarks per entry and either updates data in response to the
+<em>scheduler</em> or returns the current data for rendering a
+response.</li>
+
+</ol>
+
+<p>The current design is in-memory only, so it gets repopulated each
+time the service is booted.  I intend to add simple file-based
+persistence along the same lines used for entries and comments. The
+other major missing features are support for conditional GET and
+grouping requests into groups of 15, as allowed by the del.icio.us
+API.</p>
+
+<p>I would have liked to use the delicious <a
+href="http://del.icio.us/help/api/">API</a>, but
+<code>Network.HTTP</code> doesn't currently support HTTPS.</p>
+
+<h3>Personal Aggregation</h3>
+
+<p><img style="float: left; margin-right: 5px; margin-bottom: 5px;"
+alt="StreamOfConsciousness Sidebar screenshot"
+src="http://mult.ifario.us/files/soc_screenshot.png" />The third
+feature is aggregation of my del.icio.us bookmarks (via <a
+href="http://del.icio.us/help/rss">RSS feed</a>), Google Reader <a
+href="http://www.google.com/support/reader/bin/answer.py?answer=70656">shared
+items</a> (via Atom feed), and Twitter "tweets" (via <a
+href="http://groups.google.com/group/twitter-development-talk/web/api-documentation">JSON
+API</a>).  The aggregated flotsam, jetsam, dross, and detritus shows
+up in the sidebar under the "Stream of Consciousness" heading in the
+sidebar.</p>
+
+<p>The feature is a bit like <a
+href="http://movabletype.org/">Moveable Type</a>'s <a
+href="http://plugins.movabletype.org/action-streams/">Action
+Streams</a> plugin, but the perpubplat implementation benefits from
+the fact that a Haskell FastCGI application can have background
+threads (so no <code>crontab</code> hacking).</p>
+
+<p>The implementation is in the
+<code>Blog.Widgets.StreamOfConsciousness.*</code> modules:</p>
+
+<ul>
+
+<li><code>Thought</code> is a data structure that represents a tweet, post, shared item, etc. &#8212; date, link, content.</li>
+
+<li><code>Twitter</code>, <code>GoogleReader</code>, and
+<code>DeliciousPosts</code> encapsulate access to the respective
+services and parsing data into lists of <code>Thought</code>s.  Each
+worker uses an HTTP poller (same as with the Flickr collage) to poll a
+feed.</li>
+
+<li><code>Controller</code> manages the aggregate data structure and a
+pre-rendered HTML fragment.</li>
+
+</ul>
+
+<p>To handle the multiple writers and multiple readers, I implemented
+a lightweight version of <a
+href="http://en.wikipedia.org/wiki/Multiversion_concurrency_control">multi-version
+concurrency control</a> where readers can always get data but writers
+may have to repeat a computation if someone else updated the data in
+the meantime.  Here's a fragment from
+<code>B.W.S.Controller</code> (full
+source <a
+href="http://datapr0n.com/repos/perpubplat/src/Blog/Widgets/StreamOfConsciousness/Controller.hs">here</a>):</p>
+
+<pre class="code">commit :: SoCController -> [Thought] -> IO ()
+commit socc new_items =
+    do { snap &lt;- get_data socc
+       ; let items' = take (max_size snap) $ merge new_items $ items snap
+       ; let rendered' = thoughts_to_xhtml items' 
+       ; let snap' = snap { items = items'
+                          , rendered = rendered' }
+       ; ok &lt;- update socc snap'
+       ; if ok then
+             return ()
+         else 
+             do { threadDelay collision_delay
+                ; commit socc new_items }
+       }
+
+loop :: Chan SoCRequest -> Snapshot -> IO ()
+loop ch snap = 
+    do { req &lt;- readChan ch
+       ; snap' &lt;- case req of
+                   GetHtmlFragment c ->
+                       do { putMVar c $ rendered snap
+                          ; return snap }
+                   GetData h ->
+                       do { putMVar h snap
+                          ; return snap }
+                   Update ok snap'' ->
+                       if (version snap) == (version snap'') then
+                           do { putMVar ok True
+                              ; let snap' = snap'' { version = (version snap) + 1 }
+                              ; return snap' }
+                       else
+                           do { putMVar ok False
+                              ; return snap }
+       ; loop ch snap' }</pre>
+
+<p>The <code>commit</code> function runs in the HTTP polling thread
+doing the updating, and it's responsible both for merging the items
+into the sorted data and for updating the HTML representation that
+will get handed to the page rendering process.</p>
+
+<p>The other interesting nut to crack was extracting data from XML
+using Haskell.  I could have used the del.icio.us JSON feed and the
+JSON feed that the Google Reader shared items Javascript widget uses,
+but those lack the timestamps that I need to fold the streams
+together.</p>
+
+<h3>Extracting Data from RSS and Atom</h3>
+
+<p>I followed the standard trail for learning <a
+href="http://www.fh-wedel.de/~si/HXmlToolbox/index.html">HXT</a>,
+which involves building from <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/hxt-7.4">source</a>,
+reading the <a href="http://www.haskell.org/haskellwiki/HXT">gentle
+introduction</a>, and trying some of the <a
+href="http://www.haskell.org/haskellwiki/HXT/Practical">practical
+examples</a>.  The only issue I had was with namespace handling.</p>
+
+<p>Here's a code fragment from <code>B.W.S.DeliciousPosts</code> (source <a href="http://datapr0n.com/repos/perpubplat/src/Blog/Widgets/StreamOfConsciousness/DeliciousPosts.hs">here</a>) to read the RSS feed of my del.icio.us bookmarks:</p>
+
+<pre class="code">import Text.XML.HXT.Arrow
+
+handle_posts :: SoCController -> String -> IO ()
+handle_posts socc body = do { posts &lt;- runX ( readString parse_opts body >>> getItems )
+                            ; commit socc posts }
+
+parse_opts = [(a_validate, v_0), (a_check_namespaces,v_1)]
+                                
+atElemQName qn = deep (isElem >>> hasQName qn)
+text = getChildren >>> getText
+textOf qn = atElemQName qn >>> text
+
+rdf_uri = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdf_RDF = QN "rdf" "RDF" rdf_uri
+
+rss_uri = "http://purl.org/rss/1.0/"
+rss_item = QN "rss" "item" rss_uri
+rss_title = QN "rss" "title" rss_uri
+rss_link = QN "rss" "link" rss_uri
+
+dc_uri = "http://purl.org/dc/elements/1.1/"
+dc_date = QN "dc" "date" dc_uri
+
+
+getItem = atElemQName rss_item >>>
+          proc i -> do
+            t &lt;- textOf rss_title -&lt; i
+            u &lt;- textOf rss_link -&lt; i
+            d &lt;- textOf dc_date -&lt; i
+            returnA -&lt; Thought Delicious d u t
+
+getItems = atElemQName rdf_RDF >>>
+           proc r -> do
+             items &lt;- getItem -&lt; r
+             returnA -&lt; items</pre>
+
+<p>HXT uses <a href="http://www.haskell.org/arrows/">arrow</a>
+notation; the quick and dirty explanation is that <code>proc</code> is
+like &#955; (but for arrows instead of functions), the
+<code>&lt;-</code> is the usual monadic "bind" operator, and the
+<code>-&lt;</code> feeds a value to the expression on the shaft of the
+arrow.</p>
+
+<p>The first time I ran this against the RSS from del.icio.us, I got
+nothing back, so after looking at the XML for the RSS, I switched the
+prefix for the RSS QNames to the empty string to match the input file,
+and it worked.  Grrr...  That means that the <code>(==)</code> for
+<code>QName</code> is broken, and a quick look at the source in
+<code>Text.XML.HXT.DOM.TypeDefs</code> showed why:</p>
+
+<pre class="code">data QName = QN { namePrefix    :: String
+ualified name \"namePrefix:localPart\"
+                , localPart     :: String
+ed name \"namePrefix:localPart\"
+                , namespaceUri  :: String
+i
+                }
+             deriving (Eq, Ord, Show, Read, Typeable)</pre>
+
+<p>The derived <code>(==)</code> will just and together the
+<code>(==)</code> for the three components (prefix, local, uri), but
+XML <a
+href="http://www.w3.org/TR/REC-xml-names/#dt-qualname">QNames</a> are
+<a href="http://www.w3.org/TR/xmlschema-2/#Name">equal</a> if their
+local parts and URIs (<a
+href="http://www.w3.org/TR/REC-xml-names/#NSNameComparison">as
+strings</a>) are equal.  It's easy to fix by dropping the derivation
+of <code>Eq</code> and supplying a good version:</p>
+
+<pre class="code">-              deriving (Eq, Ord, Show, Read, Typeable)
++              deriving (Ord, Show, Read, Typeable)
++ 
++ instance Eq QName where
++     q1 == q2 = ((localPart q1) == (localPart q2))
++                &amp;&amp; ((namespaceUri q1) == (namespaceUri q2))</pre>
+
+<p>After which, it works according to my expectations for namespace
+handling.</p>
+
+<h3>Couldn't You Do All That With JavaScript...?</h3>
+
+<p>Yes.  I could.  I didn't.  Here are a few of the reasons that I chose not to:</p>
+
+<ul>
+
+<li>My experiments showed that page loads would be several seconds
+instead of a fraction of a second.  Other <a
+href="http://avc.blogs.com/a_vc/2007/01/nick_is_against.html">people</a>
+have had the same experience.  (It reminds me of the opening scene of
+<a href="http://www.imdb.com/title/tt0095348/">I'm Gonna Git You
+Sucka</a> where Junebug dies of an <a
+href="http://en.wikipedia.org/wiki/I%27m_Gonna_Git_You_Sucka">OG</a>.
+Don't let your blog die of an OW...)</li>
+
+<li>Some of the widgets are just plain fugly, IMHO.  I'm looking at you,
+Google Reader shared item "clip" and Twitter Flash widget, although
+the availability of JSON for the Google Reader shared item "clip"
+(look in the JavaScript) and Twitter would allow me to come up with
+something more pleasing (to me).</li>
+
+<li>Even though it's not a good idea &#8212; e.g., IE7 is <a
+href="http://blogs.msdn.com/ie/archive/2005/09/15/467901.aspx">broken</a>,
+Firefox &lt;3 <a
+href="http://www.mozilla.org/docs/web-developer/faq.html#accept">doesn't</a>
+do incremental display, etc. &#8212; I would like to be able to serve
+<a
+href="http://www.rfc-editor.org/rfc/rfc3236.txt"><code>application/xhtml+xml</code></a>,
+and <code>document.write</code> <a
+href="http://www.w3.org/MarkUp/2004/xhtml-faq#docwrite">doesn't
+work</a>.</li>
+
+<li>The availability of background threads on the server side means
+that Javascript on the client side isn't the only option.</li>
+
+</ul>
+
+<h3>Other Integrations and Aggregations</h3>
+
+<p>The other two features that I'd like to add are backlinks to other
+blogs and backlinks to posts on community sites like <a
+href="http://programming.reddit.com">Reddit</a> and <a
+href="http://www.dzone.com/">DZone</a>.  (I'm on the fence about
+implementing <a
+href="http://www.sixapart.com/pronet/docs/trackback_spec">trackback</a>
+support; you could twist my arm.)</p>
+
+<p>Nonetheless, I'm on the fence about directing people to comment
+threads in other locations, i.e., Reddit.  (My reasons are similar to
+<a
+href="http://weblog.raganwald.com/2007/07/thanks-for-submitting-my-post-to.html">Reg
+Braithwaite's</a>.)  It would be a simple matter to sniff referring
+URLs, deduce where an entry is posted on Reddit, and then integrate
+the comments together, but Reddit's draconian <a
+href="http://reddit.com/help/useragreement">User Agreement</a> forbids
+it:</p>
+
+<blockquote><p><small>The content, organization, graphics, text, images,
+video, design, compilation, advertising and all other material on the
+Website, including without limitation, the "look and feel" of this
+website, are protected under applicable copyrights and other
+proprietary (including but not limited to intellectual property)
+rights and are the property of Website Provider or its licensors. The
+copying, rearrangement, redistribution, modification, use or
+publication by you, directly or indirectly, of any such matters or any
+part of the website, including but not limited to the removal or
+alteration of advertising, except for the limited rights of use
+granted hereunder, is strictly prohibited.</small></p></blockquote>
+
+<p>Someone should implement a community hub that integrates discussion
+threads, followup posts, and blog comments on an original entry in a
+transparent and open fashion...</p>
+
+<h3>Postmortem</h3>
+
+<p>My first observation from this experiment is that APIs are
+preferable to feeds are preferable to widgets when it comes to
+integration of services on the web.  (Note that I didn't say web
+serivces...)  Even listing widgets is somewhat questionable in my
+opinion, since it's more of a "put my stuff on your page" than a "use
+my service".</p>
+
+<p>My second observation is nothing new, but I now have experimental
+evidence &#8212; JSON is preferable to XML, whether or not the target
+client runs in a browser.  If I were building a service, I'm not sure
+that I'd bother with supporting an XML API.</p>
+
+<p>My third observation is that I would use Haskell to build a
+product or service, and I mean that in the sense that I can see how to
+train a team and build processes (prototyping, implementation,
+quality, deployment, support) around Haskell.  The language does have
+a relatively steep learning curve (q.q. Kevin Scaldefarri's <a
+href="http://kevin.scaldeferri.com/blog/2008/02/12/Haskells90PercentProblem.html">post</a>
+on the subject and the comments that follow or Reg Braithwaite's <a
+href="http://weblog.raganwald.com/2007/10/challenge-of-teaching-yourself.html">general
+ruminations</a> on learning languages), but the real problem is
+collectively getting through the challenges once.  It reminds me of
+learning <a
+href="http://en.wikipedia.org/wiki/Spectral_sequence">spectral
+sequences</a> as a graduate student; fifteen minutes with my advisor
+to work an example was better than a week of staring at otherwise
+incrutable notation.  As a measure of the view from my current
+location on the learning curve, I coded up a working rough cut of the
+"stream of consciousness" feature in an evening plus an afternoon cup of
+coffee, and I wouldn't regard myself as being fully around the curve
+yet (FFI, custom monads/transformers, etc. await).</p>
+

@@ -1,0 +1,36 @@
+---
+layout: post
+title: "A Little Processing"
+permalink: a-little-processing.html
+categories: [processing, graphics]
+---
+
+<p>I wanted a visual representation of the usual <a
+href="http://en.wikipedia.org/wiki/Continued_fraction">continued
+fraction</a> expansion of the irrational number <code>e</code> that
+used concentric rings to represent the successive anapests of the tail
+of the expansion; with grouping added for emphasis:</p>
+
+<blockquote><p>2, 1,1,2, 1,1,4, 1,1,6, ...</p></blockquote>
+
+<p>The first ring would have four sectors; the second would have six,
+the third eight, etc.  Something like this:</p>
+
+<p style="text-align: center;"><img src="http://mult.ifario.us/images/e_rings.png" alt="" /></p>
+
+<p>The question was how to get it drawn, and after a little thought, I
+settled on writing a <a href="http://processing.org/">Processing</a>
+program to generate the image.  The language doesn't include a
+primitive for drawing sectors, but it's possible to represent a second
+as a larger filled arc and then a smaller filled arc that covers the
+same angle but filled with background color:</p>
+
+<pre class="code">fill(foreground);
+arc(x0,y0,r1,r1,theta0,theta1);
+fill(background);
+arc(x0,y0,r0,r0,theta0,theta1);</pre>
+
+<p>Or, in my case, just stacking up pie charts with the smallest on
+top is sufficient.  The source is <a
+href="http://gist.github.com/69486">here</a>.</p>
+

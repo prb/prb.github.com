@@ -1,0 +1,20 @@
+diff -rN old-fastcgi/Network/FastCGI.hsc new-fastcgi/Network/FastCGI.hsc
+46c46,47
+< import qualified Data.ByteString.Base as BSB
+---
+> import qualified Data.ByteString.Unsafe as BSU
+> import qualified Data.ByteString.Internal as BSI
+214c215
+<     mapM_ (flip BSB.unsafeUseAsCStringLen (fcgxPutCStringLen h)) (Lazy.toChunks str)
+---
+>     mapM_ (flip BSU.unsafeUseAsCStringLen (fcgxPutCStringLen h)) (Lazy.toChunks str)
+237c238
+<         ps <- BSB.createAndTrim k $ \p -> f p k
+---
+>         ps <- BSI.createAndTrim k $ \p -> f p k
+diff -rN old-fastcgi/fastcgi.cabal new-fastcgi/fastcgi.cabal
+6c6
+< build-depends: base>=2.0, cgi >= 3000.0.0
+---
+> build-depends: base>=2.0, cgi >= 3000.0.0, bytestring >= 0.9
+

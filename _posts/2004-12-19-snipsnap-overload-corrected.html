@@ -1,0 +1,6 @@
+---
+layout: post
+title: "SnipSnap Overload Corrected"
+permalink: snipsnap-overload-corrected.html
+---
+<p>Thanks to some helpful suggestions from "<a href="http://snipsnap.org/space/leo">leo</a>" (aka Matthias), an upgrade to the latest 1.0b2-uttoxeter version from 0.5.2a appears to have cured the system load behavior for the <a href="http://www.snipsnap.org">SnipSnap</a> that hosts the old <a href="http://blog.fivesight.com/prb">pbblog</a>.  With SnipSnap 0.5.2a running against a 1.4.2_04 JDK on Debian 3, the load on the server would regularly spike up over 4 and almost never dip below 1 and sporadically segfault, so <a href="http://snipsnap.org/space/2004-01-27#Linux_J2SDK_1.4.2_03_regexp_bug?">something</a> was definitely wrong.  Now that the cache is built, the server with the SnipSnap 1.0b2-uttoxeter instance is humming along at a much happier 0.08.</p>

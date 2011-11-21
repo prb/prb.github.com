@@ -1,0 +1,468 @@
+/* @override http://localhost:4000/static/styles.css */
+@import url(http://fonts.googleapis.com/css?family=Droid+Sans);
+
+a:link, a:visited {
+	color: #224466;
+	text-decoration: none;
+}
+
+a:hover, a:active {
+	color: #4488dd;
+	background-color: transparent;
+	text-decoration: none;
+}
+
+div#header {
+	border-bottom: thin dotted #cccccc;
+}
+
+div.nav p {
+	margin-top: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+	margin-bottom: 0;
+}
+
+a img {
+	border: none;
+}
+
+p.navigation, p.policies, p.formatting, ul.formatting {
+	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+h3 ~ p.formatting {
+	margin-bottom: 0px;
+	padding-bottom: 0px;
+}
+
+ul.formatting {
+	padding-left: 1em;
+}
+
+ul.formatting li {
+	list-style-type: none;
+	padding-top: 5px;
+}
+
+div#header h1 {
+	margin-bottom: 3px;
+	font-family: 'Droid Sans', sans-serif;
+	color: #337;
+	font-size: 3em;
+	margin-top: 10px;
+}
+
+div#headaer h1, span.lighter {
+	color: #22d;
+}
+
+div.nav {
+	color: #ddd;
+	font-family: 'Droid Sans' sans-serif;
+	font-size: smaller;
+}
+
+div#header h2 {
+	margin-top: 0px;
+	font-size: small;
+	font-weight: lighter;
+}
+
+body {
+	margin: 40px;
+}
+
+div.group {
+	font-size: smaller;
+	width: 570px;
+	padding-bottom: 5px;
+	padding-top: 5px;
+}
+
+div.right {
+	padding-top: 0px;
+	margin-top: 0px;
+	text-align: right;
+	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	clear: right;
+}
+
+span.hit_count, span.comment_count {
+	color: #666;
+	font-weight: heavier;
+}
+
+
+div.left {
+	padding-top: 0px;
+	margin-top: 0px;
+	text-align: left;
+	float: left;
+	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	clear: left;
+}
+
+div#container {
+	width: 860px;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+div#posts, div#comment_entry {
+	float: left;
+	width: 570px;
+}
+
+div#posts h3.sharing {
+	color: gray;
+	font: smaller "Lucida Grande", Lucida, Verdana, sans-serif;
+}
+
+div#sidebar {
+	padding-top: 0px;
+	margin-top: 0px;
+	width: 250px;
+	float: right;
+	padding-left: 15px;
+	border-left-style: dotted;
+	border-left-color: #cccccc;
+	border-left-width: thin;
+	font-size: 0.9em;
+}
+
+div#sidebar li.tag {
+	display: inline;
+	list-style-type: none;
+}
+
+div#sidebar h3 {
+	margin-bottom: 3px;
+	padding-bottom: 0px;
+	font-family: "Lucida Grande", Lucida, Verdana, sans-serif;
+	color: gray;
+	font-weight: normal;
+	font-style: normal;
+}
+
+div#sidebar p {
+	margin-top: 0px;
+}
+
+div#sidebar ul {
+	margin-top: 0px;
+}
+
+div.sidebarcontents {
+	font: x-small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+div#bottomnav {
+	padding : 5px;
+	border: 1px dotted green;
+	color: #7f7f7f;
+	font: smaller "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	margin-bottom: 10px;
+}
+
+div#bottomnav p {
+	margin: 0px;
+}
+
+div.sidebarcontents p {
+	padding-bottom: 0px;
+	margin-bottom: 0px;
+}
+
+div.tagcloud {
+	text-align: justify;
+}
+
+div.entry_wrapper > h2 > a {
+	color: gray;
+	text-decoration: none;
+	font-variant: normal;
+	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+div > h2 {
+	padding-bottom: 0px;
+	margin-bottom: 0px;
+	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	font-weight: lighter;
+
+}
+
+div.entry {
+	color: black;
+	font: smaller "Lucida Grande", Lucida, Verdana, sans-serif;
+}
+
+div.entry h3,h4,h5 {
+	font-weight: normal;
+	font-style: normal;
+	font-family: "Lucida Grande", Lucida, Verdana, sans-serif;
+	color: gray;
+}
+
+div.entry blockquote,
+div.comment blockquote {
+	color: #222;
+	font-size: smaller;
+	background-color: #f0f0f0;
+	border: 1px dotted #7f7f7f;
+	padding: 5px 10px;
+}
+
+div.entry > pre.code,
+div.comment_body_preview > pre.code,
+div.comment > pre.code {
+	margin-right: 10px;
+	color: #0c067f;
+	background-color: #f0f0f0;
+	margin-left: 10px;
+	padding: 5px;
+	border-style: solid;
+	border-width: thin;
+	font-size: x-small;
+	font-family: "Andale Mono", "Courier New", Courier, mono;		
+}
+
+span.tagcloud {
+	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	border-width: 2px;
+}
+
+p.tags {
+	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+div.entry > p code {
+	color:  #0c067f;
+	font-family: "Andale Mono", "Courier New", Courier, mono;
+}
+
+div.entry li code {
+	color:  #0c067f;
+	font-family: "Andale Mono", "Courier New", Courier, mono;	
+}
+
+div.comment {
+	padding: 5px;
+}
+
+div.comment > p {
+	padding-top: 0px;
+	margin-top: 0px;
+}
+
+div.commentwrapper {
+	font: small "Lucida Grande", Lucida, Verdana, sans-serif;
+}
+
+div.commentwrapper > p.commentattribution {
+	border-bottom-style: solid;
+	border-bottom-width: thin;
+	font: small "Lucida Grande", Lucida, Verdana, sans-serif;
+	padding-top: 1em;
+}
+
+div#sidebar > span.tagcloud > a {
+	text-decoration: none;
+}
+
+div#footer {
+	clear : both;
+	border-top: thin dotted #cccccc;
+	color: #7f7f7f;
+	font: x-small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+div#comment_entry h3 {
+	font-weight: normal;
+	font-style: normal;
+	color: #7f7f7f;
+	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+p.comment_datum, p.comment_body {
+	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+.required {
+	color: #cc0000;
+	font-weight: bold;
+}
+
+form textarea, form input {
+	border: 1px solid #7f7f7f;
+}
+
+form textarea.body_entry, form input.datum_entry {
+	background-color: #ffffff;
+	border: 1px solid #7f7f7f;
+}
+
+form textarea.body_entry:focus, form input.datum_entry:focus {
+	background-color: #f0f0f0;
+	border: 1px solid #000000;
+}
+
+form textarea.body_entry {
+	width: 95%;
+}
+
+form input.comment_submit:focus {
+	background-color: #333333;
+	color: #ffffff;
+}
+
+div.comment_body_preview {
+	font-size: small;
+	width: 570px;
+	padding-left: 10px;
+	padding-right: 10px;
+	border: 1px solid #7f7f7f;
+}
+
+div.comment_body_preview > blockquote {
+	border-left: 2px solid #000080;
+	padding-left: 10px;
+	padding-right: 10px;
+	margin-right: 10px;
+	margin-left: 10px;
+}
+
+input.post_comment_submit {
+	background-color: #007f00;
+	color: white;
+}
+
+input.edit_comment_submit {
+	background-color: #00007f;
+	color: white;
+	margin-top: 5px;
+}
+
+input.delete_comment_submit {
+	background-color: #7f0000;
+	color: white;
+	margin-top: 5px;
+}
+
+table.comment_wrapper {
+	border: 1px dotted #7f7f7f;
+}
+
+.comment_preview_fields {
+	color: #7f7f7f;
+	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+td.action_cell {
+	vertical-align: bottom;
+}
+
+img.cc-badge {
+	vertical-align: middle;
+}
+/*
+Flickr stuff...
+
+Images are wrapped in divs classed "flickr_badge_image" with ids
+"flickr_badge_imageX" where "X" is an integer specifying ordinal position.
+Below are some styles to get you started!
+*/
+#flickr_badge_uber_wrapper {
+	text-align:center;
+	margin-top: 1em;
+}
+
+
+.flickr_badge_image {
+	margin:0 10px 10px 10px;
+	border: 2px solid black;
+	float: left;
+	margin: 5px;
+}
+
+#flickr_badge_source {
+	text-align:left;
+	margin:0 10px 0 10px;}
+	
+#flickr_www {
+	display:block;
+	padding:0 10px 0 10px !important;
+	font: 11px Arial, Helvetica, Sans serif !important;
+	color:#3993ff !important;
+	float: right;
+	clear: left;
+}
+
+#flickr_badge_uber_wrapper a:hover,
+#flickr_badge_uber_wrapper a:link,
+#flickr_badge_uber_wrapper a:active,
+#flickr_badge_uber_wrapper a:visited {
+	text-decoration:none !important;
+	background:inherit !important;
+	color:#3993ff;
+}
+
+#flickr_badge_source {
+	padding:0 !important;
+	font: 11px Arial, Helvetica, Sans serif !important;
+	color:#666666 !important;
+}
+
+/*
+del.icio.us stuff
+*/
+div.delicious_chrome {
+	border: 1px #808080 dotted;
+	background-color: #f0f0f0;	
+	margin-right: 15px;
+	margin-left: 15px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-right: 10px;
+	padding-left: 10px;
+}
+
+div.delicious_chrome > p {
+	font: x-small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	padding: 0px;
+	margin: 0px;
+}
+
+div#thoughts {
+	font: x-small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+}
+
+p.thought_group {
+	font-size: small;
+	color: #a0a0a0;
+	margin-bottom: 0px;
+}
+
+p.thought {
+	margin-bottom: 3px;
+	margin-left: 5px;
+}
+
+span.tweet_stamp {
+	color: #7f7f7f;
+}
+
+p > em {
+	font-weight: bold;
+	font-style: italic;
+}
+
+h3.meta_heading {
+	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	border-bottom: 1px solid #666;
+	color: #666;
+	font-weight: lighter;
+	margin-bottom: 0px;
+	padding-bottom: 0px;
+}

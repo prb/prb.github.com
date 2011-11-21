@@ -1,0 +1,29 @@
+---
+layout: post
+title: "<code>bash</code> Tidbit of the Day"
+permalink: bash-tidbit-of-the-day.html
+categories: [bash]
+---
+<p>Along with <code>!!</code> (last command) and <code>!$</code> (last argument), I can't remember not knowing the <code>^</code> quick substitution feature in <a href="http://www.gnu.org/software/bash/"><code>bash</code></a> for replacing a string in the last entry:</p>
+
+<pre class="code">$ echo foo
+foo
+$ ^foo^bar
+echo bar
+bar</pre>
+
+<p>But that doesn't handle multiple occurrences:</p>
+
+<pre class="code">$ echo foo foo
+foo foo
+$ ^foo^bar
+echo bar foo
+bar foo</pre>
+
+<p>I read the fine <a href="http://www.gnu.org/software/bash/manual/bashref.html">manual</a> looking for something else and found the <code>!!:gs/old/new/</code> history expansion <a href="http://www.gnu.org/software/bash/manual/bashref.html#SEC120">feature</a>:</p>
+
+<pre class="code">$ echo foo foo foo
+foo foo foo 
+$ !!:gs/foo/bar/
+echo bar bar bar
+bar bar bar</pre>

@@ -1,0 +1,29 @@
+---
+layout: post
+title: "Beware the Fragile Cast"
+permalink: beware-the-fragile-cast.html
+categories: [java, antipattern, design, fragilecast, oops]
+---
+<p>Fragile casts are a pet peeve of mine.  A cast is fragile if it would be unexpected by the user,  e.g., they pass in a class that implements an interface but the method casts it to a specific implementation class.  For example:</p>
+
+<pre class="code">public void method(Iface x) {
+  some(code);
+  ((IfaceImpl)x).foo(); // Doh!
+  more(code);
+}</pre>
+
+<p>A more egregious version:</p>
+
+<pre class="code">public void setFoo(Iface x) {
+  this.foo = x;
+}
+
+public void method() {
+  some(code);
+  ((IfaceImpl)foo).func(); // Doh!!
+  more(code);
+}</pre>
+
+<p>The user's experience of the fragile cast is like stepping on a rake in tall grass and getting hit in the nose with the handle: a sudden and unexpected <tt>ClassCastException</tt> hidden away in some code that they didn't write.  Of course, <tt>ClassCastException</tt> doesn't tell you what cast failed, so if the method is buried deep within a closed-source API, it may take the user a long time to figure out what's wrong.  (Or they might just get annoyed enough to run it all through <a href="http://www.kpdus.com/jad.html">Jad</a> and see what's what.)</p>
+
+<p>The prescription is simple: Don't do that!  If the user is only supposed to use subclasses of some class, then give them a base class instead of an interface.  Or, as another alternative, alter your design so that functionality in the base class is externalized and the method can rely only on the interface.</p>

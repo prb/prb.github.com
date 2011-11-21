@@ -1,0 +1,58 @@
+---
+layout: post
+title: "OK... Who put the JUnit JAR in my WAR?"
+permalink: ok-who-put-the-junit-jar-in-my-war.html
+categories: [maven, dependency, management, graph, plugin, graphviz]
+---
+<p>My odyssey with <a href="http://maven.apache.org">Maven</a> continues.  This entry is spurred by having a WAR built with Maven come out to be three times the size of the one built with the original Ant build.  JUnit, JMock, a couple of different Log4J's, and other assorted goodies.  With multiple modules and liberal use of open source components, the question is not <em>whether</em> someone did but <em>who</em> peed in which POM?</p>
+
+<p><img align="right" src="http://upload.wikimedia.org/wikipedia/en/f/fe/ReedCollege-FauxSeal-bw.jpg" height="110px" />Open source reminds me of college.  I had the opportunity to enjoy some eclectic people during my education at Reed and Berkeley.  Rent a room and then sublet the closet?  That's cool.  Eat what others would otherwise throw away in the <a href="http://en.wikipedia.org/wiki/Reed_College#Food_services">dining commons</a>?  That's cool.  (Off topic, at least <a href="http://web.reed.edu/reed_magazine/winter06/columns/supporting_reed/geek_to_google.html">one</a> former "scrounger" has done just fine...)  These sort of situations came with their own etiquette, e.g., tell a "scrounger" if you have a cold when you drop off your tray and leave items intact and relatively unmolested.  The bohemian analogy cuts both ways with open source &#8212; you can probably find whatever you are looking for, but it may not be in quite the state that you'd like.</p>
+
+<p>Some shell scripting (<code>find</code>, <code>grep</code>, <code>xargs</code>, and friends) identified <a href="http://jakarta.apache.org/commons/httpclient/"><code>commons-httpclient</code></a> as the likely culprit, and sure enough, it's <a href="ftp://ibiblio.org/pub/packages/maven2/commons-httpclient/commons-httpclient/3.0/commons-httpclient-3.0.pom">there</a> plain as day:</p>
+
+<pre class="code">&lt;dependency&gt;
+  &lt;groupId&gt;junit&lt;/groupId&gt;
+  &lt;artifactId&gt;junit&lt;/artifactId&gt;
+  &lt;version&gt;3.8.1&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+
+<p>There should be a <code>&lt;scope&gt;test&lt;/scope&gt;</code>, but there isn't.  Since he helps steward the commons, I pinged <a href="http://blog.generationjava.com/roller/bayard/">Henri</a> about it, and it <a href="http://svn.apache.org/repos/asf/jakarta/commons/proper/httpclient/trunk/project.xml">looks</a> like the <a href="http://issues.apache.org/jira/browse/HTTPCLIENT-595">issue</a> was already <a href="http://svn.apache.org/repos/asf/jakarta/commons/proper/httpclient/trunk/project.xml">fixed</a> for versions 3.1 and on. This was only part of the battle, however, because <code>commons-httpclient</code> wasn't an explicit dependency; it was only getting included as a transitive dependency of some other dependency of one of the modules that the web application used, and the module hierarchy was already four levels deep.  Surely someone else has already experienced issues with dependencies of unknown provenance and come up with a way to navigate the graph, and it turns out that there are (at least) two solutions.</p>
+
+<p>First up, for playing Heracles to my Odysseus or Anchises to my Aeneas or Virgil to my Dante or Laurel to my Hardy or whatever in JAR hell, Henri gets a hat-tip for pointing me at the <a href="http://mojo.codehaus.org/pomtools-maven-plugin/overview.html">pomtools</a> plugin, which provides an interactive interface for navigating the graph of dependencies and can alter and serialize the underlying model of the project to fix version conflicts.  I didn't end up trying it, but I will, since I have a soft spot for anything with a terminal interface.</p>
+
+<p>Instead, since I also have a soft spot for <a href="http://www.graphviz.org/">GraphViz</a>, I used the <a href="http://el4j.sourceforge.net/plugins/maven-depgraph-plugin/index.html"><code>depgraph</code></a> plugin from the <a href="http://el4j.sourceforge.net/">EL4J</a> project, which I found via Philipp Oser's <a href="http://philhoser.blogspot.com/2007/01/dependency-graph-for-maven-2.html">blog</a>.  In my case, the plugin produced the following graph:</p>
+
+<p align="center"><img src="http://mult.ifario.us/files/depgraph.png" /></p>
+
+<p>The graph showed <code>commons-httpclient</code> referenced by a variety of <a href="http://xfire.codehaus.org/">XFire</a> components, and some exclusions got me out of JAR purgatory for the moment.  (I ate a couple of <a href="http://en.wikipedia.org/wiki/Persephone">whole pomegranates</a> down there, so I'm sure I'll be headed back sometime soon...)   This isn't just a Jakarta Commons issue.  XFire has a <a href="http://ibiblio.org/pub/packages/maven2/org/codehaus/xfire/xfire-spring/1.2.3/xfire-spring-1.2.3.pom">little</a> of the same kind of POM-rot as of 1.2.3, but that will disappear in the forthcoming 1.2.5.  For those keeping score at home, <a href="http://ws.apache.org/axis2/">AXIS2</a> has <a href="http://ibiblio.org/pub/packages/maven2/org/apache/axis2/axis2-adb/1.1/axis2-adb-1.1.pom">some</a> (<code>xmlunit</code> should be <code>&lt;scope&gt;</code>'d to <code>test</code>), too.  This makes me wish for a Maven "lint" that would flag common errors like test libraries listed as runtime dependencies or dependencies not referenced from runtime source code.</p>
+
+<p>Getting the <code>depgraph</code> plugin wired-up was straightforward.  I just added a plugin repository to the master POM:</p>
+
+<pre class="code">&lt;pluginRepositories&gt;
+  &lt;pluginRepository&gt;
+    &lt;id&gt;elca-services&lt;/id&gt;
+    &lt;url&gt;http://el4.elca-services.ch/el4j/maven2repository&lt;/url&gt;
+    &lt;releases&gt;
+      &lt;enabled&gt;true&lt;/enabled&gt;
+    &lt;/releases&gt;
+  &lt;/pluginRepository&gt;
+&lt;/pluginRepositories&gt;</pre>
+
+<p>Then the plugin to the build:</p>
+
+<pre class="code">&lt;build&gt;
+[...]
+  &lt;plugins&gt;
+    [...]
+    &lt;plugin&gt;
+      &lt;groupId&gt;ch.elca.el4j.maven.plugins&lt;/groupId&gt;
+      &lt;artifactId&gt;maven-depgraph-plugin&lt;/artifactId&gt;
+      &lt;configuration&gt;
+        &lt;outDir&gt;target/site/images&lt;/outDir&gt;
+        &lt;outFile&gt;${pom.artifactId}.png&lt;/outFile&gt;
+      &lt;/configuration&gt;
+    &lt;/plugin&gt;
+  &lt;/plugins&gt;
+&lt;/build&gt;</pre>
+
+<p>And then it's just a <code>mvn depgraph:depgraph</code> to get a view of the dependency graph.  The real lesson here is to aggressively scope your dependencies as a service to the community.</p>

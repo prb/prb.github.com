@@ -1,0 +1,20 @@
+---
+layout: post
+title: "A Dirty G5 is a Sleepy G5"
+permalink: a-dirty-g5-is-a-sleepy-g5.html
+categories: [powermac, g5, fan, cleaning, sleep]
+---
+<p>I use a venerable G5 quad for most of my work at home, and other than being noisy and producing a lot of heat, it's been a good machine.  Then last night, after I tweaked some of the base options (with <tt>/usr/sbin/sysctl</tt>) to get more processes per user, it started going to sleep at random times.  A look in the system log showed:</p>
+
+<pre class="code">Aug 14 21:15:54 g5-2 kernel[0]: SMU_Neo2_PlatformPlugin core dump:
+Aug 14 21:15:54 g5-2 kernel[0]: IOHWControls:
+[...]
+Aug 14 21:15:55 g5-2 kernel[0]: [11] "CPU A0 DIODE TEMP" Type:"temp" Id:11 CUR:79.40960 C
+Aug 14 21:15:55 g5-2 kernel[0]: [12] "CPU A1 DIODE TEMP" Type:"temp" Id:21 CUR:78.49152 C
+Aug 14 21:15:55 g5-2 kernel[0]: [13] "CPU B0 DIODE TEMP" Type:"temp" Id:31 CUR:89.51200 C
+Aug 14 21:15:55 g5-2 kernel[0]: [14] "CPU B1 DIODE TEMP" Type:"temp" Id:41 CUR:100.7168 C
+[...]</pre>
+
+<p>Ah.  CPU B is too hot...</p>
+
+<p>I popped the side panel off, pulled the air deflector and fans, cleaned a bunch of dust off of the air filter for the CPU module, put things back together, and all is well &#8212; and quieter.</p>

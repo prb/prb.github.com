@@ -1,0 +1,82 @@
+---
+layout: post
+title: "GAP, Bad Shuffle, and Playing with Permutations"
+permalink: gap-bad-shuffle-and-playing-with-permutations.html
+categories: [GAP, permutations, brainteaser]
+---
+<p><a href="http://today.java.net/pub/au/152">crazybob</a> pointed me to a <a href="http://blogs.sun.com/roller/page/mary/20041129#puzzler_solved_winner_s_identified">discussion</a> from <a href="http://blogs.sun.com/roller/page/mary">MaryMaryQuiteContrary</a>'s blog related to an unfair random permutation generator:</p>
+
+<pre class="code">import java.util.Random;
+public class Puzz {
+    private static Random rnd = new Random();    
+    public static void shuffle(Object[] a) {
+        for (int i = 0; i &lt; a.length; i++)
+            swap(a, i, rnd.nextInt(a.length));
+    }
+    private static void swap(Object[] a, int i, int j) {
+        Object tmp = a[i];
+        a[i] = a[j];
+        a[j] = tmp;
+    }
+}</pre>
+
+<p>The unfairness, as the discussion points out, should be obvious, because there are <code>n!</code> permutations and <code>n<sup>n</sup></code> equally-likely possible outputs from the <code>shuffle</code> method.  (<code>n!</code> does not divide <code>n<sup>n</sup></code> unless <code>n=2</code>.)</p>
+
+<p>One can naturally wonder just how unfair the <code>shuffle</code> method is.  For example, how often does it produce the identity permutation?  Somewhat out of nostalgia, this is just the kind of thing that I love to spend (i.e., waste) a little time on.</p>
+
+<p>The first thing to do is to work some examples.  For this kind of thing, there is a programming language called <a href="http://www.gap-system.org/">GAP</a>, complete with an interactive shell, for working with permutations -- along with finite and infinite groups, rings, algebras, vector spaces, and combinatorial structures.  (I used GAP and some other packages extensively for my PhD dissertation, and it definitely beat implementing the classic <a href="http://www.amazon.com/exec/obidos/redirect?tag=pbblog-20&amp;path=tg%2Fdetail%2F-%2F0521432138%2Fqid%3D1103139227%2Fsr%3D1-8%2Fref%3Dsr_1_8%3Fv%3Dglance%26s%3Dbooks">algorithms</a> by hand...)  One of the useful things about GAP is that it treats permutations and permutation groups as first-class constructs:</p>
+
+<pre class="code">gap&gt; (1,2,3)(4,5) * (4,5,6,7)(1,2);
+(2,3)(4,6,7);
+gap&gt; g := SymmetricGroup(7);;
+gap&gt; s := Centralizer(g,Subgroup(g,[(1,2,3,4,5)]));
+Group([ (6,7), (1,2,3,4,5) ])
+gap&gt; Size(s);
+10</pre>
+
+<p>And this makes it relatively straightforward (if a bit brutish) to compute the probability that <code>shuffle</code> produces a trivial permutation:</p>
+
+<pre class="code">gap&gt; twocycleorid := function(i,j,n)
+&gt;      if i=j then return Identity(SymmetricGroup(n));
+&gt;      else return (i,j);
+&gt;    end;
+function ( i, j, n ) ... end
+gap&gt; f := function(n)                                                 
+&gt;      local x,s;                               
+&gt;      s := [];
+&gt;      for i in Tuples([1..n],n) do                        
+&gt;        x := Identity(SymmetricGroup(n));
+&gt;        for j in [1..n] do                                
+&gt;          x := x * twocycleorid(j,i[j],n);
+&gt;         od;
+&gt;         if x = Identity(SymmetricGroup(n)) then Add(s,i);fi;
+&gt;      od;
+&gt;      return s;
+&gt;    end;
+function( n ) ... end
+gap&gt;List([2..7], x -&gt; Size(f(x)));
+[ 2, 4, 10, 26, 76, 232]</pre>
+
+<p>GAP is a very useful tool, but silicon isn't as good as carbon for this sort of thing -- doing anything meaningful with a <code>O(n<sup>n</sup>)</code> computation will require (wo)man as opposed to machine.  Even so, GAP and its ilk can still be useful as substitutes for hand computation when performing experiments.  The key, of course, is to use the computer to do things some combination of faster, more accurately, or with more data than you could be hand; I do believe that the skills to compute by hand are the source of the intuition that creates assertions worth testing by machine...  In regards to the current problem, consider the following simple obervation for <code>n=7</code>, which is the largest practical value for <code>n</code> on my PowerBook:</p>
+
+<pre class="code">gap&gt; g := function(x,y)
+&gt;      return x and y;
+&gt;     end;
+gap&gt; Iterated(List(f(7), x->Iterated(List(x, y-> y=x[x[y]]),g)),g);
+true</pre>
+
+<p>The same holds for smaller values of <code>n</code>, which would lead one to ask whether every <code>n</code>-tuple that produces the identity permutation also is an <a href="http://mathworld.wolfram.com/PermutationInvolution.html">involution</a>.  By involution I mean that if you were to have, e.g., the sequence of random indices 1, 5, 4, 3, 2 in <code>shuffle</code>, then you would have the permutation defined as:</p>
+
+<pre class="code">1 -&gt; 1
+2 -&gt; 5
+3 -&gt; 4
+4 -&gt; 3
+5 -&gt; 2</pre>
+
+<p>This is an involution, and as expected, <code>(25)(34)(43)(52)</code> (which is what <code>shuffle</code> produces) is the identity permutation.  Conveniently, there is a well-known formula for the number of involutions on an <code>n</code>-element set, so the assertion would be that the number of times that the trivial permutation occurs is defined by the formula:</p>
+
+<pre class="code">w(1) = 1
+w(2) = 2
+w(n) = w(n-1) + (n-1) w(n-2)</pre>
+
+<p>I don't have any jobs or backpacks to give away, but I'll invite any budding combinatorialists out there to prove the assertion about involutions.  (It's not that bad.)  If you think you have a proof (or counterexample), drop a comment here, and I'll let you know if it's right or wrong.</p>

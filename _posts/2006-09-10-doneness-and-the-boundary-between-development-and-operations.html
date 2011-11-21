@@ -1,0 +1,20 @@
+---
+layout: post
+title: "Doneness and the Boundary Between Development and Operations"
+permalink: doneness-and-the-boundary-between-development-and-operations.html
+categories: [operations, development, software, golive, production, businessmetrics, customerimpact]
+---
+<p>Engineers have a variety of perspectives on ready-for-production, from &quot;It works on my desktop&quot; to &quot;The functional and integration suites all pass&quot; to &quot;The theorem prover and state space traversal heuristics assert that it's perfect&quot;ù.  Ultimately, &quot;Are we ready to go to production?&quot; is the wrong question.  The right questions are more business-oriented:</p>
+
+<ul>
+<li>How would it impact the customer and what would it cost us to flip the switch right now?</li>
+<li>How can we respond to issues and get the system back on its feet?</li>
+</ul>
+
+<p>The first question is for the business owner to answer outside of the context of what the development team has to say about the state of the system.  Failure is a fact, and managing the probability of a failure requires time and investment.  It's the business owner's prerogative to choose the points on the curves of magnitude of customer impact and ongoing investment in development &#8212; <em>independent</em> of asserted outcome of the development effort.  It's a bit like cooking a steak <em>&agrave; point</em> in that you want the software to be just barely done.</p>
+
+<p>The second question is for development leads and architects to answer, both at design time and during implementation.  Recovery options need to be matched to failure modes and possible inconsistencies, and failures need to be detectable other than via confused or angry customers.  The design-time imperative is to pick the right design patterns &#8212; stateless when possible, idempotent always, and minimal horizontal co-footprint per unit of traffic come to mind.  (I'm saying &quot;co-footprint&quot; because &quot;footprint&quot; isn't quite the right term.  A customer spread across a couple of tables is no big deal, but needing to have all of the customers in a single database is constraining.)  The development solution is to engineer-in instrumentation and plug-points where data or operations can be cleanly injected into the system, ideally to the point that an operator can use the system in the same ways that the system uses itself.  (The body of thought on <a href="http://roc.cs.berkeley.edu/">recovery-oriented computing</a> is a good read on the subject of designing systems so that failures are just bumps in the road.)</p>
+
+<p>In all practical terms, the developers are the only capable and knowledgeable operators for the system, and refining and documenting the system to the point that first-tier and second-tier support can exist is an organic process that needs to happen in response to observed issues, not a phase on a project plan.  To extend the steak analogy, this would be <em>bien cuit</em>, which is only suitable as a chew toy for a dog or for the manufacture of footwear.  In my mind, intimacy with the system is the bond that links development to operations, but just handing out pagers to software engineers without the proper groundwork is both illegitimate and destructive.</p>
+
+<p>In a maxim, <em>system failures are to be expected, but business failures are unacceptable</em>.</p>

@@ -1,0 +1,72 @@
+---
+layout: post
+title: "Typo + TextDrive != Happy"
+permalink: typo-textdrive-happy.html
+categories: [typo, ruby, textdrive, hosting, blogging, radio, mt, movabletype, snipsnap, wordpress, java]
+---
+<p>The logs say that mult.ifario.us throws a fair number of <tt>HTTP
+500</tt> <a
+href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html">response
+codes</a> back at visitors, and that's sad.  It is certainly not the
+impression I want to make on visitors and readers (although
+subscribers are insulated from failures by FeedBurner's excellent
+service).  In a perfect world, something as <em>simple</em> as a
+weblog wouldn't throw any 500s, ever.  The problems come from running
+<a href="http://typosphere.org/">Typo</a> on <a
+href="http://www.textdrive.com/">TextDrive</a>.  There isn't anything
+intrinsically wrong with the Typo engine, with Ruby, or even with
+TextDrive, as a similar setup runs like a top in my test environment,
+but TextDrive's resource limits make Typo's design impractical.</p>
+
+<p>This got me thinking about the design of the simplest possible
+weblog publishing software, a design that would eschew the use of a
+database and all runtime configuration in favor of a system that is
+ultra-lightweight and quick to "boot".  Almost all of the
+content in the blog is relatively static &mdash; display of an entry,
+feeds, archives, various paginations and groupings only require
+lightweight decoration of the XHTML for a given entry.  Paginations
+and groups, e.g., by multiple tags or by tags plus date, require some
+dynamic behavior on the server, but not that much.  A
+complexity-ectomy doesn't have to come at the expense of chrome and
+eye candy, as modern browsers make it possible to inject dynamic
+content (images from <a href="http://www.flickr.com">Flickr</a>, links
+from <a href="http://del.icio.us">del.icio.us</a>, free-associations
+from Google <a href="http://www.google.com/adsense">AdSense</a>, etc.)
+into the browser directly in the form of JavaScript.</p>
+
+<p>The one difficult bit (and the only thing that would require a
+POST) would be comments.  Comments don't need a database or use of
+dynamic content, either, and using email for comment workflow would
+solve multiple problems.  Here's a sketch:</p>
+
+<ul>
+<li>Comment is made on the weblog by submitting a form.</li>
+<li>Server-side executable wraps the comment as an email and sends it to the blog's author.</li>
+<li>Normal email filtering machinery is applied to the comment, i.e., spam filtering,  and the blog content author either chooses to reply to the message, in which case the comment is added to the relevant entry (e.g., via a <tt>procmail</tt> recipe), or simply ignores it.</li>
+</ul>
+
+<p><a href="http://akismet.com/">Akismet</a> is apparently effective
+(if, at the same time, a statement about the sad state of the
+signal-to-noise ratio of the present-day internet), but it makes sense
+to leverage the filtering technology and massive corpus
+(~10<sup>7</sup> messages) of SPAM and ham that I already use for
+email.</p>
+
+<p>I've experimented with different publishing platforms (<a
+href="http://radio.userland.com/">Radio Userland</a>, <a
+href="http://snipsnap.org/">SnipSnap</a>, <a
+href="http://www.sixapart.com/movabletype/">MT</a>, <a
+href="http://wordpress.org/">WordPress</a>, Typo), and they all fell
+short for me in <a
+href="http://mult.ifario.us/articles/2003/10/04/migrated-to-snipsnap">one</a>
+<a
+href="http://mult.ifario.us/articles/2004/08/16/migrated-from-snipsnap">way</a>
+or <a
+href="http://mult.ifario.us/articles/2005/11/26/migrated-to-typo">another</a>.</p>
+
+<p>As the saying goes, if you want something done right...  I'm going
+to embark on a project to replace Typo with something simple,
+dense/terse, and home-grown.  It's also a chance to experiment with a
+new language or two, so it should be both fun and educational.  Java's
+out due to footprint, but my mind is open otherwise &mdash; SmallTalk,
+Haskell, Lisp, Io, ...?</p>

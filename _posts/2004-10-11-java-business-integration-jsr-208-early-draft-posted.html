@@ -1,0 +1,21 @@
+---
+layout: post
+title: "Java Business Integration (JSR-208) Early Draft Posted"
+permalink: java-business-integration-jsr-208-early-draft-posted.html
+categories: [jbi, esb, bpel]
+---
+<p>An <a href="http://jcp.org/aboutJava/communityprocess/edr/jsr208/index.html">early  draft review</a>  of the <a href="http://jcp.org/en/jsr/detail?id=208">JSR-208</a> a.k.a. JBI (<strong>J</strong>ava <strong>B</strong>usiness <strong>I</strong>ntegration) is available for download.  In a nutshell:</p>
+
+<blockquote>"JBI seeks to address this problem [vendor-specific integration soup] by creating a standards-based architecture for integration solutions, allowing third-party components to be assembled by the end user."</blockquote>
+
+<p>The key high-level constructs of JBI are:</p>
+
+<ul>
+<li>An <strong>environment</strong> is a container that provides a normalized WSDL-based messaging service ("NMS"), deployment, (re)configuration, deployment, and management.</li>
+<li>A <strong>service engine</strong> ("SE") is a "business logic driver".  (This is where WS-BPEL fits into JBI.)</li>
+<li>A <strong>binding component</strong> ("BC") is a bridge between the internal normalized messaging service of the JBI environment and external protocols such as HTTP or JMS.</li>
+</ul>
+
+<p>In terms of a WS-BPEL process living in a JBI environment, the process would be deployed in a SE that can execute WS-BPEL processes againt the NMS, and the concrete bindings for partnerLinks would be BC implementations.</p>
+
+<p>One of the reasons that I'm excited about JBI is a little bit selfish: the portable runtime container that we built for <a href="http://www.fivesight.com/pxe.shtml">PXE</a> is similar to a JBI environment, so we've already been working in these terms for over a year...  PXE will be available  as a JBI component as soon as there are implementations that can host it.</p>

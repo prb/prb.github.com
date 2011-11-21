@@ -1,0 +1,21 @@
+---
+layout: post
+title: "Not Quite No Transactions"
+permalink: not-quite-no-transactions.html
+categories: [transactions, concurrency, distributedsystems, scalability]
+---
+<p>I enjoyed <a href="http://www.addsimplicity.com/adding_simplicity_an_engi/">Dan Pritchett</a>'s presentation on <a href="http://www.addsimplicity.com/downloads/eBaySDForum2006-11-29.pdf">The EBay Architecture</a>, but now it seems like people are getting carried away, where the intersection of people with my blogroll contains <a href="http://www.martinfowler.com/bliki/">Martin Fowler</a>.  Martin is well-known and rightly regarded as a smart guy, but this fragment from his <a href="http://www.martinfowler.com/bliki/Transactionless.html">post</a> on "no transactions" isn't quite right:</p>
+
+<blockquote>The rationale for not using transactions was that they harm performance at the sort of scale that eBay deals with. This effect is exacerbated by the fact that eBay heavily partitions its data into many, many physical databases. As a result using transactions would mean using distributed transactions, which is a common thing to be wary of.</blockquote>
+
+<p>(Unfortunately, Martin's bliki doesn't support comments, or I would be posting this over there.)  The relevant bullet from Dan's <a href="http://www.sdforum.org/p/calEvent.asp?CID=2013&amp;mo=11&amp;yr=2006">presentation</a> at SDForum (not the one at <a href="http://qcon.infoq.com/qcon/speakers/">QCon</a>) is:</p>
+
+<blockquote>Absolutely no client-side transactions.<br />
+&lowast; Single database transactions managed through anonymous PL/SQL blocks.<br />
+&lowast; No distributed transactions.</blockquote>
+
+<p>This is very different than "no transactions", but the game of telephone is already <a href="http://bitworking.org/news/143/Transactionless">underway</a>.</p>
+
+<p>The reality is that attempts at being "for sure, for sure" (multi-master replication, two-phase commit, locking, aggressive retry, etc.) can and do inhibit scale.  There are also plenty of stupid things you can do to hobble an application without leaving a single database, usually by inadvertently abusing locking.  (One classic is a <tt>SELECT ... FOR UPDATE</tt> that includes a join across a code table.)</p>
+
+<p>In terms of things that can be done to scale, it's a good idea to take the shortest path to a working system.  It's a good idea to be intimately familiar with the performance characteristics of a system in production, and that means really, truly understanding how all of the pieces (load balancer, web server, application tier, database, physical network, hardware, etc.) work individually and collectively.  It's important to be able to disentangle design choices from business constraints, and this is more or less the point that Assaf <a href="http://blog.labnotes.org/2007/01/01/2pc-or-not-2pc/">made</a> in the original round of discussion about Dan Pritchett's presentation.  As <a href="http://www.25hoursaday.com/weblog/PermaLink.aspx?guid=01fb92e2-7a9a-449d-9ec8-6a8bf09e8bdf">Dare Obasanjo</a> and <a href="http://feeds.feedburner.com/~r/moonwatcher/~3/102847962/item.php">Charlie Wood</a> point out, life without transactions isn't necessarily a picnic, either.  Thinking about "what can I live without" in the abstract will lead down the path toward something like what <a href="http://www.pathelland.com/">Pat Helland</a> describes in his <a href="http://www-db.cs.wisc.edu/cidr/cidr2007/papers/cidr07p15.pdf">Life Beyond Distributed Transactions</a> paper, but that journey should be taken in pragmatic steps driven by experiment and experience.  (And now that you're <a href="http://devhawk.net/2007/03/02/Morning+Coffee+37.aspx">out</a> of <a href="http://www.amazon.com">the jungle</a>, Pat, can you hurry up and go back to blogging?)</p>

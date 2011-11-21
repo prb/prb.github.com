@@ -1,0 +1,23 @@
+---
+layout: post
+title: "Crunching Java Class Versions with <code>bash</code>-fu"
+permalink: crunching-java-class-versions-with-bash-fu.html
+categories: [java, version]
+---
+
+<p>I recently needed to root out the JDK 6 classes lurking in an application that was supposed to run
+on JDK 5, and it turns out that it's not that difficult with a little <code>bash</code>-fu.  After
+unpacking all of the constituent JAR files:</p>
+
+<pre class="code">$ find . -name *.class | tee -a classes | xargs -n 1 head -n 1 | \
+  cut -b 8 | xargs -IX printf '%d\n' "'X" | \
+  paste -d ' ' - classes | grep '^50'</pre>
+
+<p>Et, voila!  I have the culprit:</p>
+
+<pre class="code">50 ./jlayer-1.0.1.jar/javazoom/jl/converter/Converter$PrintWriterProgressListener.class
+50 ./jlayer-1.0.1.jar/javazoom/jl/converter/Converter$ProgressListener.class
+[...]</pre>
+
+<p>A rebuild of the JLayer library, and all's well again.</p>
+

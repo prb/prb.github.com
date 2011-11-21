@@ -1,0 +1,25 @@
+---
+layout: post
+title: "Cute Interview Problem"
+permalink: cute-interview-problem.html
+---
+<p>I like to answer the basic engineering skills questions given to candidates that interview for a position in my org, just to make sure that I'm not getting too rusty.  This problem was particularly cute and only takes about 5 minutes if you just plow through it; on the other hand, it can be done in thirty minutes or so even if a progression of hints is needed.</p>
+
+<p>Here's the statement of the problem:</p>
+
+<blockquote>Given a batch of n jobs with positive durations {t<sub>0</sub>,...,t<sub>n</sub>} and positive difficulties {c<sub>0</sub>,...,c<sub>n</sub>}, what is the optimal order of execution for the batch under the assumption that the cost of performing a job is the product of the difficulty and the start time for that job?</blockquote>
+
+<p>One way to approach this kind of problem is to assume that we know the optimal order for n jobs, and the we just need to find a best location for the a new job with duration d and cost k in the sequence.  WLOG, we can assume that the optimal order for the n jobs happens to be zero through n.  If the original cost is OC, the total cost of scheduling the job at slot j is:</p>
+
+<blockquote>TC(j) = c<sub>1</sub>t<sub>0</sub>+...+k(t<sub>j-1</sub>+...+t<sub>0</sub>)+c<sub>j</sub>(d+t<sub>j-1</sub>+...+t<sub>0</sub>)+...<br />
+TC(j) = OC+k(t<sub>j-1</sub>+...+t<sub>0</sub>)+d(c<sub>j</sub>+...+c<sub>n</sub>)</blockquote>
+
+<p>Scheduling at j is better than scheduling at j+1 if TC(j+1)&gt;TC(j):</p>
+
+<blockquote>0 &lt; TC(j+1)-TC(j)<br />
+0 &lt; (OC+k(t<sub>j</sub>+...+t<sub>0</sub>)+d(c<sub>j+1</sub>+...+c<sub>n</sub>)) - (OC+k(t<sub>j-1</sub>+...+t<sub>0</sub>)+d(c<sub>j</sub>+...+c<sub>n</sub>))<br />
+0 &lt; kt<sub>j</sub> - dc<sub>j</sub></blockquote>
+
+<p>And that's equivalent to k/d &gt; c<sub>j</sub>/t<sub>j</sub>.</p>
+
+<p>Thus, a lowest cost solution is to perform the jobs in descending order of difficulty per unit time.  This problem also has the nice property that a <a href="http://en.wikipedia.org/wiki/Greedy_algorithm">greedy algorithm</a> (&#8220;Do the hardest job per unit time first; repeat.&#8221;) produces an optimal solution.</p>

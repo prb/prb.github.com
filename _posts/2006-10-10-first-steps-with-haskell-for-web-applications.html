@@ -1,0 +1,57 @@
+---
+layout: post
+title: "First Steps with Haskell for Web Applications"
+permalink: first-steps-with-haskell-for-web-applications.html
+categories: [haskell, ruby, rubyonrails, blogging, performance, benchmarking, fastcgi, cgi, atom]
+---
+<p>As I <a
+href="http://mult.ifario.us/articles/2006/10/10/typo-textdrive-happy">blogged</a>
+yesterday, I'm planning to build a simplified personal publishing
+system to host this blog, partially to get around resource consumption
+issues with the current platform and partially to get some exercise
+with a new language or two.  I thought about <a
+href="http://www.smalltalk.org">Smalltalk</a>, <a
+href="http://www.erlang.org/">Erlang</a>, and <a
+href="http://www.iolanguage.com">Io</a>, but <a
+href="http://www.haskell.org/">Haskell</a> gets the initial nod if for
+no other reason than it's a third side of the coin that Ruby and Java
+are two sides of &mdash; <a
+href="http://haskell.org/onlinereport/index.html">rigorously
+defined</a>, "purely" functional, lazy, "typeful" and
+compiles to native code via <a href="http://haskell.org/ghc/">GHC</a>.
+(And, of course, the syntax warms the cockles of my mathematician's
+heart.)  Like <a href="http://www.ruby-lang.org/">Ruby</a> with <a
+href="http://rubygems.org/">gems</a>, the GHC runtime also has
+excellent modularity, with a minimal and standard core and good
+package management via <a
+href="http://www.haskell.org/cabal/">Cabal</a>.  (<a
+href="http://mult.ifario.us/articles/2006/08/20/open-source-java-yawn">Hello</a>?
+<a href="http://www.jcp.org/en/jsr/detail?id=270">Java</a>?)</p>
+
+<p>The first question is how to integrate an application written in Haskell into a web container, preferably a web server like <a href="http://www.lighttpd.net/">lightTPD</a> or <a href="http://httpd.apache.org/">Apache</a> via <a href="http://www.fastcgi.com/">FastCGI</a>.  (<a href="http://hoohoo.ncsa.uiuc.edu/cgi/">CGI</a> would be a consideration, too, but that's just too retro for me.)  Thankfully, as of the forthcoming 6.6 version, GHC has good CGI support via the <a href="http://www.haskell.org/ghc/dist/current/docs/libraries/cgi/Network-CGI.html">Network.CGI</a> module, and <a href="http://www.cs.chalmers.se/~bringert/">Bj&ouml;rn Bringert</a> has a <a href="http://www.cs.chalmers.se/~bringert/darcs/haskell-fastcgi/doc/">FastCGI binding</a> that built on the GHC 6.5 tip with only a little tinkering.  (I wanted to use the core Network.CGI module in place of Bj&ouml;rn's <a href="http://www.cs.chalmers.se/~bringert/darcs/cgi-compat/doc/"><tt>cgi-compat</tt></a> module.)</p>
+
+<p>A "Hello, World" implementation using the FastCGI binding and then compiled to native code performed well on a basic smoke benchmark.  Here's the relevant line from <tt>top</tt> for an instance of the handler:</p>
+
+<pre class="code">  PID COMMAND      %CPU   TIME   #TH #PRTS #MREGS RPRVT  RSHRD  RSIZE  VSIZE
+[...]
+  234 hello.fcgi   0.0%  0:06.83   1    13    21   692K  1.63M  1.69M  29.0M
+[...]</pre>
+
+<p>Benchmarking with <a href="http://httpd.apache.org/docs/2.0/programs/ab.html"><tt>ab</tt></a> shows that 5 handlers can happily crank through around 4000 requests/second with 99% of the requests requiring &lt;2ms.</p>
+
+<p>For comparison purposes and with an identical FastCGI configuration, the simplest possible Ruby on Rails "Hello, World" implementation (create <tt>test</tt> controller, edit the <tt>.rhtml</tt> to  return content, wire-up FastCGI) consumes considerably more memory:</p>
+
+<pre class="code">  PID COMMAND      %CPU   TIME   #TH #PRTS #MREGS RPRVT  RSHRD  RSIZE  VSIZE
+[...]
+  537 ruby1.8     12.1%  0:26.49   1    14    94  22.5M  3.35M  24.5M  54.5M
+[...]</pre>
+
+<p>and only manages around 100 requests/second with ~50ms response
+time for the 50th percentile and ~400ms at the 99th percentile.  (I
+recognize that I should probably put a <em>sic.</em> after the
+"only", since 100 requests/second is significantly in excess of
+the peak throughput that my blog sees on a good day.)</p>
+
+<p>This is far from apples-to-apples, as the RoR version is doing a <em>lot</em> more work under the covers, but it does give me the expectation that I can probably get a Haskell blog implementation that will have a memory footprint smaller than a base <tt>irb</tt> and provide Slashdottable performance.</p>
+
+<p>Next up, deciding on how to store/represent an entry and how to implement Atom for syndication.</p>

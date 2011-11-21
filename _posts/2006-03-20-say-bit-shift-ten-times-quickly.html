@@ -1,0 +1,24 @@
+---
+layout: post
+title: "Say \"Bit Shift\" Ten Times Quickly"
+permalink: say-bit-shift-ten-times-quickly.html
+---
+<p>This week's cute interview problem <a href="http://hansonchar.blogspot.com/2006/03/int-to-bytes.html">came</a> from <a href="http://hansonchar.blogspot.com">Hanson Char</a>:</p>
+
+<blockquote>What is the best (time, space) way to convert a Java <tt>int</tt> to a four-byte array where the zero<sup>th</sup> entry of the array contains the LSB?</blockquote>
+
+<p>The best solution that I'm aware of is to use shift right (<tt>&gt;&gt;&gt;</tt>) and a cast to grab the bytes:</p>
+
+<blockquote><pre>public byte[] toBytes(int i) {
+  return new byte[] {
+    (byte)i,
+    (byte)(i&gt;&gt;&gt;8),
+    (byte)(i&gt;&gt;&gt;16),
+    (byte)(i&gt;&gt;&gt;24)};
+}</pre></blockquote>
+
+<p>My initial solution included some <tt>&amp;255</tt> that a look at the <a href="http://java.sun.com/docs/books/jls/first_edition/html/5.doc.html#175672">Java Language Specification</a> convinced me were superfluous.  (Narrowing conversions just truncate the leading bits in <a href="http://en.wikipedia.org/wiki/Two's_complement">twos complement</a> notation.)</p>
+
+<p>Checking the bytecode with either <tt>javap -c</tt> or the very convenient ASM <a href="http://asm.objectweb.org/eclipse/bco/index.html">plugin</a> for Eclipse reminds me that shift-right is a single <a href="http://java.sun.com/docs/books/vmspec/html/Overview.doc.html#6410">opcode</a>, <tt>IUSHR</tt>, parameterized by the number of bits to shift.</p>
+
+<p>One alternative suggestion was to use <tt>java.nio.ByteBuffer</tt>.  That solution yields comparably compact code (<tt>putInt(i)</tt>) but on inspection, the implementation uses the package-private class <tt>java.nio.Bits</tt> which just incorporates the same shifting technique as above, and the result is not surprisingly significantly slower that just using the shifting technique directly.</p>

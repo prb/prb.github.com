@@ -1,0 +1,18 @@
+---
+layout: post
+title: "Scalability and Data Partitioning"
+permalink: horizontal-partitioning.html
+categories: [DHT, scalability]
+---
+<p><a href="http://www.almaer.com/">Dion</a> made a <a href="http://www.almaer.com/blog/archives/001187.html">post</a> about &#8220;minimal shared data&#8221; as a key to scaling an application like <a href="http://www.basecamphq.com/">Basecamp</a> that got me thinking.  This is indeed a pattern in scalability &#8212; partitioning.  If the data will cooperate, then partitioning makes a good alternative to either fancy hardware (e.g., a SAN) or fancy software (e.g., a big multi-master database cluster).</p>
+
+<p>A few references and tidbits on the topic come to mind:</p>
+
+<ul>
+<li><a href="http://www.bradfitz.com/">Brad Fitzpatrick</a>'s <a href="http://www.danga.com/words/2005_oscon/oscon-2005.pdf">presentation</a> on the LiveJournal backend: &#8220;Can't join.  Don't care.  Never join user data w/ other user data.&#8221;  He goes on to talk about how they move users between partitions and how they built the individual partitions.</li>
+<li>A great <a href="ftp://ftp.research.microsoft.com/pub/tr/TR-2004-107.pdf">paper</a> from Microsoft Research about migrating <a href="http://terraserver.microsoft.com/">TerraServer</a> from a SAN to commodity hardware in 2003.  The paper goes into gory detail, all the way to data loading and backup strategies, rack configurations, and network topology. (Thanks to <a href="http://www.micro-workflow.com/">Dragos</a> for the pointer to the paper.)</li>
+</ul>
+
+<p>Gory detail on system loads, network topology, and hardware configuration is what you'd expect to find in a discussion of scalability, as opposed to the language(s) used to write the software.</p>
+
+<p>If you aren't stuck in a relational rut, there are very cool things out there.  There are the online storage services like <a href="http://aws.amazon.com/s3">Amazon S3</a> and <a href="http://www.strongspace.com/">StrongSpace</a>, academic projects like <a href="http://oceanstore.cs.berkeley.edu/">OceanStore</a> and <a href="http://opendht.org/">OpenDHT</a>, whatever Microsoft and Google field in the space, and <a href="http://www.filehostingreview.com/">plenty more</a>.  In terms of things to either download and play with (as opposed to access over the net), the <a href="http://bamboo-dht.org/">Bamboo</a> Distributed Hash Table (&#8220;DHT&#8221;) comes to mind, and the accompanying <a href="http://srhea.net/papers/bamboo-usenix.pdf">paper</a> on churn is a good read.  In the same vein, there is (yet another) interesting <a href="http://research.microsoft.com/research/pubs/view.aspx?tr_id=1035">paper</a> from Microsoft Research on a system called &#8220;BitVault&#8221; designed for reliable long-term storage of massive amounts of data like images (e.g., every check processed or every X-Ray taken in the US) and media that uses a DHT under the covers.</p>

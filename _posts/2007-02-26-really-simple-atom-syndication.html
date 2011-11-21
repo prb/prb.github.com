@@ -1,0 +1,270 @@
+---
+layout: post
+title: "Really Simple Atom Syndication"
+permalink: really-simple-atom-syndication.html
+categories: [haskell, blog, atom]
+---
+<p>Herein post 4 of <code>n</code> on my hobby project to rewrite my
+personal publishing software in Haskell.  Herein, I create a
+economically-driven approach to Atom syndication format for entries
+and comments.  By citing <em>economics</em> as the prime motivator, I
+mean that I'm aiming neither for the most complete nor the most
+elegant implementation except where those two overlap with
+exigency.</p>
+
+<h3>Required Reading</h3>
+
+<p>To make sure that I knew enough about Atom, I read through the <a
+href="http://www.ietf.org/rfc/rfc4287.txt">Atom Syndication Format</a>
+RFC (I prefer the plain text to the <a
+href="http://www.atomenabled.org/developers/syndication/atom-format-spec.php">pretty
+version</a>), the <a
+href="http://www.atomenabled.org/developers/syndication/">introduction</a>
+at <a href="http://www.atomenabled.org">AtomEnabled.org</a>, and Mark
+Pilgrim's note on <a
+href="http://diveintomark.org/archives/2004/05/28/howto-atom-id">How
+to make a good ID in Atom</a>.  After reading so many specifications
+that either use flabby XML Schema (like WSDL) or ad hoc XML (like <a
+href="http://blogs.law.harvard.edu/tech/rss">RSS&#160;2.0</a>), the
+use of <a href="http://relaxng.org/">RELAX&#160;NG</a> <a
+href="http://relaxng.org/compact-20021121.html">compact syntax</a> in
+the RFC was a breath of fresh air.</p>
+
+<h3>Really Simple Atom Data Model</h3>
+
+<p>The first set of design decisions I made were what to throw out
+from Atom.  I decided to omit the <code>atom:contributor</code>
+construct entirely as well as <code>atom:author</code> is sufficient
+for my purposes, and <code>atom:source</code> and attributes on
+<code>atom:link</code> other than <code>@rel</code> and
+<code>@href</code> weren't going to be any use to me, either.  I
+decided to omit the <code>@scheme</code> and <code>@label</code>
+attributes on <code>atom:category</code> since all of my
+<code>@term</code> values will be human readable and don't plan on
+using any scheme other than my own.  I decided to omit any specific
+constraints on components that might otherwise be URIs, <a
+href="http://www.ietf.org/rfc/rfc3339.txt">RFC3339</a>-formatted
+date/time, or other &#8212; <code>String</code> will do for now, and
+I'll make sure that properly formatted data (including escaping as
+necessary) is used in the first place.  I also decided to leave any of
+the sequencing and quantity constraints out of the model, as this will
+be an <em>internal</em> model only.</p>
+
+<p>Here's the way it looks, and if you squint at it just right, it
+doesn't look that different from the RELAX&#160;NG compact schema:</p>
+
+<pre class="code">data AtomElement = Feed [AtomElement]
+                 | Entry [AtomElement]
+                 | Content AtomContent
+                 | Author { author_name :: String,
+                            author_uri :: Maybe String,
+                            author_email :: Maybe String }
+                 | Category String 
+                 | Generator { gen_name :: String,
+                               gen_uri :: String,
+                               gen_version :: String }
+                 | Id String
+                 | Icon String
+                 | Link { rel :: String,
+                          href :: String }
+                 | Logo String
+                 | Published String
+                 | Rights AtomContent
+                 | Subtitle AtomContent
+                 | Summary AtomContent
+                 | Title AtomContent
+                 | Updated String
+                   deriving (Show)</pre>
+
+<p>The <code>Maybe String</code> for the <code>author_uri</code> and
+<code>author_email</code> components of the <code>Author</code>
+representation are intended to allow for comments where the author may
+omit an email address or link.  (Of course, I may just omit their
+comment under those circumstances...)  Next, one more type for
+<code>AtomContent</code>, where I elected to eliminate the possibility
+of HTML content:</p>
+
+<pre class="code">data ContentType = XHTML | TEXT
+                 deriving (Eq,Show,Enum)
+
+data AtomContent = AtomContent { contentType :: ContentType,
+                                 body :: String }
+                 deriving (Show)</pre>
+
+<h3>XML Output</h3>
+
+<p>With a few (non-limiting) assumptions, getting XML out is simple.
+First up, the Atom URI, my choice to bind it to the <code>atom</code>
+prefix and my assumption that XHTML will always in the default
+namespace:</p>
+
+<pre class="code">_prefix :: String
+_prefix = "atom"
+
+_uri :: String
+_uri = "http://www.w3.org/2005/Atom"
+
+start_div :: String
+start_div = "&lt;div xmlns=\"http://www.w3.org/1999/xhtml\">"
+
+end_div :: String
+end_div =  "&lt;/div>"</pre>
+
+<p>It's worth noting that the XHTML <a
+href="http://www.w3.org/TR/xhtml1/">specification</a> (via either the
+<a
+href="http://www.w3.org/TR/xhtml1/dtds.html#a_dtd_XHTML-1.0-Transitional">transitional
+DTD</a> or the <a
+href="http://www.w3.org/TR/xhtml1/dtds.html#a_dtd_XHTML-1.0-Strict">strict
+DTD</a>) requires that the XHTML namespace be the default namespace,
+but there is no requirement that an XHTML fragment in an Atom feed use
+the default namespace.</p>
+
+<p>Next, some really simple functions to wrap content in elements:</p>
+
+<pre class="code">-- Format a clopen element with a list of attributes.
+clopen :: String -> [(String,String)] -> String
+clopen s [] = "&lt;" ++ (prefix s) ++ "/>"
+clopen s xs = "&lt;" ++ (prefix s) ++ (nv_to_s "" xs) ++ "/>"
+
+-- Wrap a string in an element.
+wrap :: String -> String -> String
+wrap s t = "&lt;" ++ (prefix s) ++ ">" ++ t ++ "&lt;/" ++ (prefix s) ++ ">"
+
+-- If a value is present (i.e., not Nothing), wrap it in an element.
+wrap_m :: String -> Maybe String -> String
+wrap_m _ Nothing = ""
+wrap_m s (Just t) = wrap s t
+
+-- Wrap an element with attributes around a string.
+wrap_ :: String -> [(String,String)] -> String -> String
+wrap_ s [] t = wrap s t
+wrap_ s xs t = "&lt;" ++ (prefix s) ++ (nv_to_s "" xs) ++ ('>':t)
+               ++ "&lt;/" ++ (prefix s) ++ ">"
+
+wrap_ns :: String -> String -> String
+wrap_ns s t = wrap_ s [(_prefix,_uri)] t
+
+-- Format a list of name-value pairs as attributes.
+nv_to_s :: String -> [(String,String)] -> String
+nv_to_s = foldl att
+
+att :: String -> (String,String) -> String
+att s (n,v) = s ++ (' ':(n ++ "=\"" ++ v ++ "\""))</pre>
+
+<p>And then just map the various shades of <code>AtomElement</code>
+onto the functions:</p>
+
+<pre class="code">toXml :: AtomElement -> String
+toXml (Feed xs) = wrap_ns "feed" (content_ xs)
+toXml (Entry xs) = wrap_ns "entry" (content_ xs)
+
+toXml' :: AtomElement -> String
+toXml' (Entry xs) = wrap "entry" (content_ xs)
+toXml' (Category s) = clopen "category" [("term",s)]
+toXml' (Id s) = wrap "id" s
+toXml' (Icon s) = wrap "icon" s
+toXml' (Link r h) = clopen "link" [("rel",r),("href",h)]
+toXml' (Logo s) = wrap "logo" s
+toXml' (Published s) = wrap "published" s
+toXml' (Updated s) = wrap "updated" s
+toXml' (Author s u e) = wrap "author" ((wrap "name" s)
+                                       ++ (wrap_m "uri" u)
+                                       ++ (wrap_m "email" e))
+toXml' (Generator n u v) = wrap_ "generator" [("uri",u),("version",v)] n
+toXml' (Content a) = atom_text "content" a
+toXml' (Rights a) = atom_text "rights" a
+toXml' (Subtitle a) = atom_text "subtitle" a
+toXml' (Summary a) = atom_text "summary" a
+toXml' (Title a) = atom_text "title" a
+
+content_ :: [AtomElement] -> String
+content_ = concat.(map toXml')
+
+-- Render an Atom text construct as XML.
+atom_text :: String -> AtomContent -> String
+atom_text s (AtomContent XHTML t) = wrap_ s [("type","xhtml")] (start_div ++ t ++ end_div)
+atom_text s (AtomContent TEXT t) = wrap s t</pre>
+
+<p>(The Atom spec allows <code>@type="text"</code> to be omitted.)
+The <code>toXml</code> function and the <code>AtomElement</code>,
+<code>AtomContent</code>, and <code>ContentType</code> types are all
+that would be exported from the module.</p>
+
+<p>A quick check with <code>ghci</code> shows that this does the right
+thing:</p>
+
+<pre class="code">[...]
+*Text.Atom> let entry = Entry [Title (AtomContent TEXT "Atom-Powered Robots Run Amok"), Id "urn:uuid:foo", Updated "2003-12-12T18:30Z", Author John Doe" Nothing Nothing, Content (AtomContent XHTML "<p>Some text.</p>")] 
+*Text.Atom> toXml entry
+"&lt;atom:entry atom=\"http://www.w3.org/2005/Atom\">&lt;atom:title type=\"text\">Atom-Powered Robots Run Amok&lt;/atom:title>&lt;atom:id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a&lt;/atom:id>&lt;atom:updated>2003-12-12T18:30Z&lt;/atom:updated>&lt;atom:author>&lt;atom:name>John Doe&lt;/atom:name>&lt;/atom:author>&lt;atom:content type=\"xhtml\">&lt;div xmlns=\"http://www.w3.org/1999/xhtml\">&lt;p>Some text.&lt;/p>&lt;/div>&lt;/atom:content>&lt;/atom:entry>"
+</pre>
+
+<p>The <code>let entry=...</code> line makes more sense with some
+whitespace thrown in:</p>
+
+<pre class="code">let entry = Entry [
+  Title (AtomContent TEXT "Atom-Powered Robots Run Amok"),
+  Id "urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a",
+  Updated "2003-12-12T18:30Z",
+  Author "John Doe" Nothing Nothing,
+  Content (AtomContent XHTML "&lt;p>Some text.&lt;/p>")
+]</pre>
+
+<h3>Other Available XML Wheels</h3>
+
+<p>While the above is a small wheel, it is a wheel nonetheless, and I
+looked at three Haskell XML libraries before reinventing it:</p>
+
+<ul>
+
+<li><em>Haskell XML Toolbox</em>, a.k.a., HXT, (<a
+href="http://www.fh-wedel.de/~si/HXmlToolbox/">link</a>) appears to be
+under active development and supports my basic requirements of <a
+href="http://www.fh-wedel.de/~si/HXmlToolbox/hdoc_arrow/Text-XML-HXT-Arrow-WriteDocument.html">XML
+output</a> and <a
+href="http://www.fh-wedel.de/~si/HXmlToolbox/hdoc_arrow/Text-XML-HXT-DOM-TypeDefs.html#t%3AQName">namespace
+support</a>.  The API looks agreeable, and there is <a
+href="http://cale.yi.org/index.php/HRSS">RSS aggregator</a> in 50
+lines as an example.  If I choose to implement the <a
+href="http://www.ietf.org/internet-drafts/draft-ietf-atompub-protocol-13.txt">Atom
+Publishing Protocol</a>, HXT is the way I'll go to get
+<code>atom:entry</code> turned into the right kind of internal
+structure.</li>
+
+<li><em>HaXml</em> (<a
+href="http://www.cs.york.ac.uk/fp/HaXml/">link</a>) <a
+href="http://www.cs.york.ac.uk/fp/HaXml/HaXml/Text-XML-HaXml-Types.html#t%3AName">appears</a>
+to lack namespace support, so I dismissed it without looking deeply at
+it.</li>
+
+<li><em>HXML</em> (<a
+href="http://www.flightlab.com/~joe/hxml/">link</a>) <a
+href="http://www.flightlab.com/~joe/hxml/status.html">lacks</a>
+namespace support, so I dismissed it without looking deeply at it.
+That said, the <a
+href="http://www.flightlab.com/~joe/sgml/validate.html">validation
+concept</a> in HXML has the <a
+href="http://compilers.iecc.com/comparch/article/94-02-109">same
+heritage</a> as the one <a
+href="http://www.thaiopensource.com/relaxng/derivative.html">used</a>
+in the RELAX NG validator <a
+href="http://www.thaiopensource.com/relaxng/jing.html">Jing</a>.</li>
+
+</ul>
+
+<h3>What's Left?</h3>
+
+<p>There's enough real work left for at least three more blog entries:
+storage/state management for entries (probably <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/stm/Control-Concurrent-STM.html">STM</a>
+with persistence via the filesystem), a commenting facility,
+human-facing content display and navigation (probably Haskell via the
+<a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/xhtml/Text-XHtml.html">Text.XHtml</a>
+package), and making sure that the FCGI wrapper works well
+multi-threaded.  (I want a multi-threaded FCGI handler so that STM can
+serve as the concurrency control for the application; otherwise, the
+persistence layer will need to provide that functionality.)</p>
+
+<p>State's the next one I'll tackle.</p>

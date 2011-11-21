@@ -1,0 +1,21 @@
+---
+layout: post
+title: "Web Services Orchestration Whitepaper from HP and a Quick Trip Back in Time"
+permalink: web-services-orchestration-whitepaper-from-hp-and-a-quick-trip-back-in-time.html
+categories: [wsstar, bpel, orchestration, transactions]
+---
+<p>Chris Peltz (from <a href="http://www.hp.com">HP</a>) has written an <a href="http://devresource.hp.com/drc/technical_white_papers/WSOrch/WSOrchestration.pdf">overview</a> of web services orchestration that was cited by <a href="http://www.theserverside.com/home/myThreads.jsp?user_id=1">Floyd Marinescu</a> on <a href="http://www.theserverside.com">TheServerSide.com</a>:</p>
+
+<blockquote><a href="http://www.theserverside.com/home/thread.jsp?thread_id=17996">Review of Web Services Orchestration Tools and Standards</a>. Today's web services platforms allow exposing application logic as web services, but there also needs to be a standard way to combine web services together to form business processes. In 2002, a number of new standards were introduced to address this including BPEL4WS and WSCI. A recent whitepaper from HP provides a review [of] standards, products, and intiatives related to ws orchestration.</blockquote>
+
+<p>Other than missing a couple of important vendors in the space (e.g., <a href="http://www.fivesight.com">us</a>), the report focuses on <a href="http://www-106.ibm.com/developerworks/webservices/library/ws-bpel/">BPEL4WS</a>, <a href="http://dev2dev.bea.com/techtrack/wsci.jsp">WSCI</a>, and <a href="http://www.bpmi.org/BPML.htm">BPML</a>.</p>
+
+<p>The missing pieces of the report, in my view, are highlighted in the section called "early work" and the bibliography.  The following sentence introduces the idea that any web services orchestration specification is fundamentally dependent on a notion of long-running transactions to support its execution:</p>
+
+<blockquote>Traditional transactional systems that are ACID-based are typically not sufficient for long-running, distributed transactions.</blockquote>
+
+<p>(<a href="http://www.oasis-open.org/committees/business-transactions/">BTP</a> is comparable to <a href="http://www-106.ibm.com/developerworks/library/ws-transpec/">WS-T</a>/<a href="http://www-106.ibm.com/developerworks/library/ws-coor/">WS-C</a>, but it surprising to see it given no coverage, considering that HP spinout <a href="http://www.arjuna.com">Arjuna</a> has been heavily involved in work on the BTP specification.) Nonetheless, the "early work" section picks up with WSFL (which is really just MQWorkflow done with web services), and the bibliography doesn't contain anything before 2000.</p>
+
+<p>The fact is, there is a significant body of work starting from the late 1970's (i.e., Gray, "<a href="http://portal.acm.org/citation.cfm?id=723863">Notes on Data Base Operating Systems</a>") and extending through the 1980's (e.g., J. E. B. Moss, "Nested transactions: an approach to reliable distributed computing", which you can buy on <a href="http://www.amazon.com/exec/obidos/tg/detail/-/0262132001/002-6087107-4761643?vi=glance">Amazon.com</a>) and 1990's (e.g., Reuter/W√í¬§chter, <a href="http://citeseer.nj.nec.com/cache/papers/cs/4075/ftp:zSzzSzftp.informatik.uni-stuttgart.dezSzpubzSzapricotszSzpszSzWaeRe91.pdf/the-contract-model.pdf">The ConTract Model</a>) on extended transaction models that doesn't even get a nod but is very much worthy of consideration. That isn't to say that there isn't interesting work ongoing, e.g.,  <a href="http://nenya.ms.mff.cuni.cz/related/publ/tp/CORBAWorkflow03.pdf">The CORBA Activity Service Framework for Supporting Extended Transactions</a> from 2001.</p>
+
+<p>Maybe this seems like heady or esoteric stuff at first glance, but if we honestly believe that service-oriented architecture and orchestration are the future of software, then any talk of "standards" or "specifications" with a less than fully rigorous consideration of the literature and previous implementations would be irresponsible. </p>

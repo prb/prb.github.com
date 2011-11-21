@@ -1,0 +1,24 @@
+---
+layout: post
+title: "<code>.editrc</code> Tidbit for <code>ghci</code>"
+permalink: editrc-tidbit-for-ghci.html
+categories: [haskell, editrc, editline, ghci]
+---
+
+<p>The only thing that I lost in the transition between <a
+href="http://tiswww.case.edu/php/chet/readline/rltop.html">readline</a>
+in GHC 6.8 and <a href="http://www.thrysoee.dk/editline/">editline</a>
+in GHC 6.10 was backwards history search in <code>ghci</code> bound to
+<code>^R</code>.  I use that particular feature quite a bit, so that
+had a big negative impact on my productivity.</p>
+
+<p>Here's how to get it back.  Create a file in your home directory
+called <code>.editrc</code> with the following contents:</p>
+
+<pre class="code">edit on
+bind ^R em-inc-search-prev</pre>
+
+<p>The analogous setting for forward search (<code>bind ^S
+em-inc-search-next</code>) doesn't work for some reason, but that's
+not one that I'm going to miss.</p>
+

@@ -1,0 +1,22 @@
+---
+layout: post
+title: "No Arrow Notation in Java, Please"
+permalink: no-arrow-notation-in-java-please.html
+categories: [java, syntax, java7, arrows, properties]
+---
+<p>Via <a href="http://www.almaer.com/blog/archives/001325.html">Dion</a> (via <a href="http://kirk.blog-city.com/java_70_language_feature_considered_harmful.htm">Kirk</a>, via <a href="http://blogs.sun.com/dannycoward/">Danny</a>), the syntax</p>
+
+<pre class="code">a -> foo = b -> foo</pre>
+
+<p>as shorthand for</p>
+
+<pre class="code">a.setFoo(b.getFoo())</pre>
+
+<p>is on the table.  I'll just be blunt and say that I don't like it.  First off, it makes me think of Haskell, where <tt>&lt;-</tt> and <tt>-&gt;</tt> have meaning consistent with the use of arrows in mathematical notation, and I can't help but read the fragment above as "<tt>a</tt> maps to <tt>foo</tt> assigned to <tt>b</tt> maps to <tt>foo</tt>".  (Yes, it also makes me think of the the C syntax dereferencing a member of a structure, <tt>ptr&#160;-&gt;member</tt> as shorthand for <tt>(*ptr).member</tt>.)  Second, what does it really save?  At least in the example above, it saves two characters for each property ("<tt>-&gt;</tt>" in place of "<tt>.set</tt>" or "<tt>.get</tt>") and a total of four parentheses.  Unlike <a href="http://lifeaftertheoilcrash.net/">oil</a> and <a href="http://www.biologicaldiversity.org/swcbd/species/polarbear/index.html">polar bears</a>, we have an infinite supply of parentheses, so any arguments of efficiency or efficacy aren't going to win me over.</p>
+
+<p>On the other hand, if some more visually appropriate syntax were to be added that supported indirect access, e.g.:</p>
+
+<pre class="code">String foo = "bar";
+a !! foo = b !! "bar"</pre>
+
+<p>you might get me interested, since this would provide a useful idiomatic syntax that would save me work with dynamic proxies and reflection.</p>

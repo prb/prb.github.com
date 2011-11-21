@@ -1,0 +1,84 @@
+---
+layout: post
+title: "More on Erlang Performance and Threading"
+permalink: more-on-erlang-performance-and-threading.html
+categories: [erlang, smp, multicore, concurrency, threading, kernel, macosx, g5]
+---
+<p>After I saw <a href="http://www.franklinmint.fm/">Robert Sayre</a>'s <a href="http://www.franklinmint.fm/blog/archives/000792.html">results</a>, I thought that I'd give Rickard Green's Erlang <a href="http://www.erlang.org/ml-archive/erlang-questions/200603/msg00111.html">exerciser</a> &#8220;<a href="http://mult.ifario.us/files/big.erl">big.erl</a>&#8221; a go on my four-core (two 2.5GHz G5 processors with two cores each) PowerMac (MacOS&#160;X 10.4.6) to see the effect of different numbers of schedulers.  (Joe Armstrong posted some <a href="http://www.erlang-stuff.net/wordpress/?p=14">benchmark information</a> in his <a href="http://www.erlang-stuff.net/">blog</a>, but I don't have a means to reproduce them for direct comparison.)</p>
+
+<h4>Eye-Grabbing Plots</h4>
+
+<p>There's code below, so as an <em>amuse bouche</em>, here are a couple of plots that illustrate the results.  (I used <a href="http://www.slac.stanford.edu/grp/ek/hippodraw">HippoDraw</a> to draw the plots.)  This first graphic shows the time to execute the benchmark plotted against the number of processes.</p>
+
+<table align="center">
+<tr>
+<td rowspan="8"><img src="http://mult.ifario.us/files/bmark_comparison.png" /></td>
+<td></td><td></td>
+</tr><tr>
+<th><small>#Schedulers</small></th><th><small>Color</small></th>
+</tr><tr>
+<td><small>1</small></td><td bgcolor="orange"><small>&#160;orange&#160;</small></td>
+</tr><tr>
+<td><small>2</small></td><td bgcolor="red"><small>&#160;red&#160;</small></td>
+</tr><tr>
+<td><small>4</small></td><td bgcolor="green"><small>&#160;green&#160;</small></td>
+</tr><tr>
+<td><small>8</small></td><td bgcolor="blue"><small>&#160;blue&#160;</small></td>
+</tr><tr>
+<td><small>16</small></td><td bgcolor="magenta"><small>&#160;magenta&#160;</small></td>
+</tr>
+<tr>
+<td>&#160;</td><td>&#160;</td>
+</tr>
+</table>
+
+<p>The green plot illustrates that four schedulers breaks even with one or two schedulers at 800 processes and wins from there out.  (I did try a 32 scheduler run but ditched it part way through because the performance was so poor.)  Here's another plot that provides an alternative visualization.</p>
+ 
+<p align="center"><img src="http://mult.ifario.us/files/bmark.png" /></p>
+
+<p>In the plot, lighter is faster, and as the number of processes increases, it's visually apparent that the four scheduler sequence is superior.</p>
+
+<h4>Interpretation</h4>
+
+<p>OK &#8212; so what gives here?</p>
+
+<p>In comparison with Robert's <a href="http://www.franklinmint.fm/blog/archives/000792.html">results</a> (look for the graph), multiple schedulers provided better performance but much less dramatically versus a single scheduler, and performance degraded much more rapidly with more than the optimum number of schedulers.  More than likely, the root cause lies down deep in the core of the MacOS&#160;X kernel.  Apple has a <a href="http://developer.apple.com/technotes/tn/tn2028.html">technote</a> that explains threading in MacOS&#160;X, and a cursory read suggests that the application-level pthread threading model is deeply layered over the low-level kernel threading model.  My interpretation would be that Mach is doing extra work to spread load across lower-level threads when relatively few schedulers are used, so it wouldn't be surprising if a single scheduler manages to use slightly more than one of the cores.</p>
+
+<p>In terms of what SMP (a.k.a. &#8220;symmetric multi-processing&#8221;) means for Erlang, MT (for &#8220;multi-threaded&#8221;) would be a better term.  The current  version of Erlang, R10B, uses a single scheduler thread to process a queue of runnables, and Erlang R11B uses multiple scheduler threads to manage the same queue.  (See, e.g., this <a href="http://www.erlang.se/euc/05/1710OTPupdate.ppt">presentation</a>.)  Under (naively) ideal circumstances, a threads works so hard that it fully consumes the attention of a processor and then other threads are forced onto other processors (i.e., number of threads converges to number of processors), but as this benchmark illustrates, the strength of that convergence is determined by the extent to which the operating system kernel cooperates.</p>
+
+<h4>Code Snippets</h4>
+
+<p>Here's a little <a href="http://mult.ifario.us/files/bmark.erl">snippet</a> of Erlang to make running the benchmark with different numbers of processes easier and dump data in a convenient format:</p>
+
+<pre class="code">-module(bmark).
+-export([go/0]).
+
+n() -> element(1,string:to_integer(
+                  lists:nth(1,init:get_plain_arguments()))).
+
+plur(1) -> "";
+plur(_) -> "s".
+
+runbmark([]) -> done;
+runbmark([Head|Tail]) ->
+    io:format("~4w ~4w ~6.1f~n",
+              [n(), 
+               Head, 
+               trunc(big:bang(Head)/100000)/10]),
+    runbmark(Tail).
+
+go() ->
+    N = n(),
+    io:format("// Running with ~w scheduler~s.~n",
+              [N,plur(N)]),
+    runbmark(lists:seq(50,1500,50)),
+    io:format("~n",[]),
+    halt().</pre>
+
+<p>And here's some bash to run 1, 2, 4, 8, and 16 schedulers in succession:</p>
+
+<pre class="code">for ((i=0 ; i&lt;5 ; ++i )); do \
+ path/to/otp_src_R11B_2006-05-08/bin/erl -smp +S$((1&lt;&lt;$i)) \
+-noshell -eval 'bmark:go()' -- $((1&lt;&lt;$i)); echo; done</pre>
+
+

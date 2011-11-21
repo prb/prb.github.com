@@ -1,0 +1,18 @@
+---
+layout: post
+title: "Join Calculus and Java"
+permalink: join-calculus-and-java.html
+---
+<p>In response to an <a href="http://blogs.fivesight.com/pbblog/index.php?p=61">earlier posting</a> about <a href="http://research.microsoft.com/~nick/polyphony/">Polyphonic C#</a>, <a href="http://www.informatik.uni-trier.de/~ley/db/indices/a-tree/i/Itzstein:G=_Stewart.html">Stewart Itzstein</a> pointed me to some of <a href="http://www.acrc.unisa.edu.au/groups/sysarchsec/abstractions.html">his work</a> on a similar extension to Java. (Itzstein's work predates Polyphonic C#.)</p>
+
+<p>The idea is to combine the <a href="http://pauillac.inria.fr/cdrom/www/join/eng.htm">join calculus</a> with Java to get a new language that has convenient syntax for concurrent programming. For example:</p>
+
+<blockquote><pre>public class OnePlaceBuffer {
+  public Object get() &amp; put(Object o) {
+    return o;
+  }
+}</pre></blockquote>
+
+<p>would have the behavior that the <code>get()</code> method would block until <code>put(Object o)</code> is called, and the <code>get()</code> caller would receive <code>o</code>.</p>
+
+<p>The CiteSeer <a href="http://citeseer.nj.nec.com/532429.html">entry</a> has links to a cached copy of the paper. </p>

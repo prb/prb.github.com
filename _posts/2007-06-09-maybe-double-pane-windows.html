@@ -1,0 +1,15 @@
+---
+layout: post
+title: "Maybe Double-Pane Windows..."
+permalink: maybe-double-pane-windows.html
+categories: [windows, memoryleak, linux, solaris, reboot, recoveryoriented]
+---
+<p>A consulting customer of mine who deploys Java apps on Windows had an issue with an otherwise well-behaved system that was suddenly thrashing.  A quick glance at the virtual sizes of various processes showed an instance of <code>winlogon</code> that had sucked up over 2GB of memory was the culprit, and the underlying <a href="http://support.microsoft.com/kb/912354/">reason</a> was amusing:</p>
+
+<blockquote>[...] If you do not log on the computer, a system memory leak may occur. Over time, the operating system may leak memory in the Winlogon.exe process at a rate of approximately 1 to 2 megabytes (MB) an hour. [...]</blockquote>
+
+<p>At that rate, ~2GB of leakage meant that the system had been up for between one and three months, which is not so good.</p>
+
+<p>But then maybe it's not really so bad, either.  My choice of a deployment platform would be different (<a href="http://www.sun.com/software/solaris/">Solaris</a> or <a href="http://fedoraproject.org/wiki/">Linux</a>), but that's more out of familiarity and personal experience than any hard data.  Realistically, rebooting once a month shouldn't be a big deal.  A reboot is a dry run for a recovery scenario, so bringing a machine down and back up should be routine.  In an <a href="http://en.wikipedia.org/wiki/N+1_Redundancy">N+1</a> configuration, a rolling reboot shouldn't impact the customer, either.</p>
+
+<p>In any case, I don't think that Windows Server 2003 was designed with <a href="http://roc.cs.berkeley.edu/">recovery-oriented computing</a> as one of the guiding principles.</p>

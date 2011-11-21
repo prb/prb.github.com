@@ -1,0 +1,20 @@
+---
+layout: post
+title: "Just Write a Program or a Real Parser, Damn It."
+permalink: just-write-a-program-or-a-real-parser-damn-it.html
+---
+<p>I have come to loathe <tt>.properties</tt> and <tt>.xml</tt> configuration files.  (The use of them <em>together</em> is just <a href="http://struts.apache.org/">inexcusable</a>.)  People tend to grab a properties or XML file when they need to <em>parse</em> something, and something is usually a configuration file of some stripe.  This is convenient, as it happens that parsers for properties and XML files are readily available and built into Java, but both flunk on some aspects of usability:</p>
+
+<ul>
+<li><em>A configuration should be verifiable outside of the runtime container.</em>  I am deeply frustrated by compiling an application, building artifacts, and deploying those artifacts only to find out that a property was misnamed, a configuration file was not in the correct location, or a combination or parameters is unsupported.</li>
+<li><em>A configuration should be relatively easy to write.</em>  "Easy" in this context doesn't mean pretty colors and auto-completion, but it does mean that the configuration scheme should be human <em>writable</em>.  (Human readable is a subordinate goal.)  Overloading a markup language and thus forcing users to type everything twice doesn't count as "easy" and neither does overloading property naming for poor man's namespaces or hierarchy.</li>
+</ul>
+
+<p>There are (at least) two viable alternatives:</p>
+
+<ul>
+<li><em>Use programmatic configuration.</em>  Build a reasonable, well-documented configuration API into your application and have users write to it.</li>
+<li><em>Invent a simple language and write a parser.</em>  It's not that difficult to pick up <a href="http://www.antlr.org/">ANTLR</a> or <a href="https://javacc.dev.java.net/">JavaCC</a> and create a little language that meets your configuration requirements.  </li>
+</ul>
+
+<p>The use of a scripting language (like <a href="http://www.beanshell.org/">Beanshell</a> or <a href="http://groovy.codehaus.org/">Groovy</a>) can combine both approaches.  (For example, <a href="http://crazybob.org/">Bob</a>'s approach for <a href="https://dynaop.dev.java.net/">dynaop</a> is a good example.)</p>

@@ -1,0 +1,27 @@
+---
+layout: post
+title: "Using the Command Pattern for Commandline Tools and Ant Tasks"
+permalink: using-the-command-pattern-for-commandline-tools-and-ant-tasks.html
+---
+<p>The <a href="http://c2.com/cgi/wiki?CommandPattern">command pattern</a> is a classic design pattern where a request is encapsulated as an object.  The usual examples of the command pattern deal with implementing grouping/batching or adding common functionality (e.g., "undo") through inheritance, and this distinguishes a command object from a function call.</p>
+
+<p>My favorite use case at the moment is decoupling the implementation of a command from the clients that invoke it, and here's a concrete example:</p>
+
+<blockquote><p>A system provides support for deploying, undeploying, enabling, and disabling runtime instances via JMX.  Commandline clients, Ant <code>Task</code>s, and support for invocation from a web application are required.</p></blockquote>
+
+<p>Here's an outline for a first-cut solution:</p>
+
+<ul>
+<li>Create a <code>CommandContext</code> interface with methods for the logging and output operations that the commands may need.  For example, an <code>out(String s)</code> method might be implemented using <code>System.out.println(s)</code> for a commandline client, but it's probably worthwhile to have the Ant <code>Task</code> implement the interface so that the implementation can use <code>handleOutput(String s)</code>.</li>
+<li>Implement an abstract base class that supplies a concrete <code>validate()</code> method, and an abstract <code>execute(CommandContext c)</code> method.  The concrete base class should also include getters and setters for any fields that are common across the set of commands.  (This is the motivation for the concrete as opposed to abstract <code>validate()</code> method.)  The invocation contract is to call <code>validate()</code> and then <code>execute(CommandContext c)</code>.</li>
+<li>Extend the base class to create classes that model the operations with concrete <code>execute(CommandContext c)</code> methods.</li>
+<li>Implement the clients according to the following recipe:
+<ol>
+<li>Create an appropriate <code>CommandContext</code> instance.</li>
+<li>Create an appropriate command object.</li>
+<li>Capture parameters from the commandline, <code>get*</code>/<code>set*</code> methods on the Ant <code>Task</code>, or whathaveyou.</li>
+<li>Invoke the command.</li>
+</ol>
+</li></ul>
+
+<p>The payoff is as expected: short and simple implementations of the various clients.  With a little extra work to abstract and mock-up the connection mechanics, adding a unit test client permits testing the individual command objects against a mock back-end.</p>

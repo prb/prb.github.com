@@ -1,0 +1,15 @@
+---
+layout: post
+title: "Useful grep Flag"
+permalink: useful-grep-flag.html
+categories: [grep, log]
+---
+<p>GNU <a href="http://www.gnu.org/software/grep/grep.html"><tt>grep</tt></a> supports a <tt>-A</tt> flag (or <tt>--after-context</tt> if you're a long options kind of person) that includes lines of context:</p>
+
+<pre class="code">
+-A NUM, --after-context=NUM
+       Print  NUM  lines  of  trailing  context  after  matching lines.
+       Places  a  line  containing  --  between  contiguous  groups  of
+       matches.</pre>
+
+<p>which is <em>very</em> handy for sifting through log files where you want <tt>grep</tt> to match the "ERROR" but the useful information is in the following couple of lines.</p>

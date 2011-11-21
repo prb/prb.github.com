@@ -1,0 +1,21 @@
+---
+layout: post
+title: "HTTP 100 Tidbit"
+permalink: http-100-tidbit.html
+categories: [.net, http, 100continue, jetty]
+---
+<p>Before <a href="http://netzooid.com/blog">Dan</a>'s <a href="http://netzooid.com/blog/2007/11/14/apachecon-rest-presentation/">presentation</a>, I hadn't heard of <a href="http://rfc.net/rfc2616.html#s8.2.3">100 (Continue)</a>, but then I ran into it today.  A client had an issue with a .NET client talking to a Jetty instance, and the conversation went something like this:</p>
+
+<pre class="code">POST /uri/foo HTTP/1.1
+[...]
+Expect: 100-continue
+Connection: Close
+
+100 Continue
+[Jetty closes the connection.]</pre>
+
+<p>It turns out that this is an <a href="http://jira.codehaus.org/browse/JETTY-439">issue</a> with the way that Jetty handles the <code>Connection: Close</code> <a href="http://rfc.net/rfc2616.html#s14.10">header</a>.  Even though it seems reasonable to drop the connection according to 14.10 (if you think of the <code>100 Continue</code> as a response), dropping the connection violates 8.2.3:</p>
+
+<blockquote><p><small>Upon receiving a request which includes an Expect request-header field with the "100-continue" expectation, an origin server MUST either respond with 100 (Continue) status and continue to read from the input stream, or respond with a final status code.</small></p></blockquote>
+
+<p>Experiences like this are the reason that I always smile when someone tells me that they've built their own HTTP client or server implementation; it's not that simple.</p>

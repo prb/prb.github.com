@@ -1,0 +1,153 @@
+---
+layout: post
+title: "STM and IO Redux"
+permalink: stm-and-io-redux.html
+categories: [stm, haskell, IO, unsafeIOToSTM]
+---
+<p><a href="http://pepeiborra.blogspot.com/">Pepe Iborra</a> left a <a
+href="http://mult.ifario.us/articles/2007/03/04/stm-and-io#comments">comment</a>
+on my <a
+href="http://mult.ifario.us/articles/2007/03/04/stm-and-io">entry</a>
+on STM and IO about the use <code>unsafeIOToSTM</code> that spurred me
+to do some more <a
+href="http://research.microsoft.com/~simonpj/papers/stm/index.htm">reading</a>
+and ask a few questions by email.  (Better yet, people who knew the
+answers were kind enough to respond.)</p>
+
+<h3>Better without <code>unsafeIOToSTM</code></h3>
+
+<p>The consensus was to avoid the use of <code>unsafeIOToSTM</code>
+and just combine the <code>IO</code> actions in the <code>IO</code>
+monad.  This changes things around a bit but in a good way;
+refactoring (if the word applies in this scenario) only took about 15
+minutes.</p>
+
+<p>Disregarding the suggestion to use <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/stm/Control-Concurrent-STM-TMVar.html"><code>TMVar</code></a>
+for the moment, here are some revisions.  (If you look at
+<code>TMVar</code>, the <a
+href="http://darcs.haskell.org/ghc-6.6/packages/stm/Control/Concurrent/STM/TMVar.hs">source</a>
+is more informative than the documentation.)</p>
+
+<p>First, <code>check_out</code> and <code>check_in</code> need to
+change, and storing an entry to disk can get simpler:</p>
+
+<pre class="code">check_out :: TVar Holder -> IO Holder
+check_out h = atomically ( do { h' &lt;- readTVar h
+                              ; if locked h'
+                                then retry
+                                else writeTVar h (lock h')
+                              ; return h' } )
+
+check_in :: TVar Holder -> Holder -> IO ()
+check_in h' h = atomically ( do { h'' &lt;- readTVar h'
+                                ; if (locked h'')
+                                  then writeTVar h' (unlock h)
+                                  else error "Internal error." } )
+
+store :: Holder -> IO Holder
+store h = do { let e = entry h
+              ; do writeFile (fname e) ((show e) ++ "\n")
+              ; return h }</pre>
+
+<p>And two additional utility functions:</p>
+
+<pre class="code">onHolders :: (Entry -> Entry) -> (Holder -> Holder)
+onHolders f = \ (Holder e l) -> Holder (f e) l
+
+s_apply :: (Entry -> Entry) -> TVar Holder -> IO ()
+s_apply f h' = check_out h'
+               >>= (store' . onHolders f)
+               >>= (check_in h')</pre>
+
+<p>(The "<code>&gt;&gt;=</code>" in <code>IO</code> is sequencing
+where the output of each step is passed to the next as input.)  The
+flow of <code>s_apply</code> is as follows:</p>
+
+<ol>
+<li>"Check out" the entry by setting the <code>locked</code> field to <code>True</code> and then pass the <code>Holder</code> to the next step.</li>
+<li>Apply the function <code>f</code> to the <code>Entry</code> wrapped in the <code>Holder</code>, write the result to disk, and pass it along.</li>
+<li>"Check in" the entry by setting the <code>locked</code> field to <code>True</code> and writing the new value into the <code>TVar</code>.</li>
+</ol>
+
+<p>Publishing and unpublishing a persistent <code>Entry</code> now has
+the appealingly simple form:</p>
+
+<pre class="code">s_publish :: TVar Holder -> IO ()
+s_publish = s_apply publish
+
+s_unpublish :: TVar Holder -> IO ()
+s_unpublish = s_apply unpublish</pre>
+
+<h3>Even Better with <code>bracket</code></h3>
+
+<p>An anonymous commenter pointed out <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Exception.html#v%3Abracket"><code>bracket</code></a>,
+a function that has the same semantics as <code>try { ... } finally {
+... }</code> in Java.  The <code>bracket</code> function has the
+signature:</p>
+
+<pre class="code">bracket :: IO a -> (a -> IO b) -> (a -> IO c) -> IO c</pre>
+
+<p>In the analogy with <code>try</code>/<code>finally</code> from
+Java, the <code>IO&#160;a</code> would occur <em>before</em> the
+<code>try</code>, like <code>lock</code>'ing a <a
+href="http://java.sun.com/j2se/1.5.0/docs/api/java/util/concurrent/locks/Lock.html"><code>Lock</code></a>
+in the usual idiom.  The result of the initial computation is passed
+both to the inner computation and to the final computation, so the
+application of the function (e.g., <code>publish</code>) would need to
+be grouped with the <code>check_out</code> operation if the published
+<code>Entry</code> was to be the one checked back in.  For my
+purposes, <a
+href="http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Exception.html#v%3AbracketOnError"><code>bracketOnError</code></a>
+is preferable, since it only executes the fallback action if the inner
+action (i.e., the last argument) fails.  With
+<code>bracketOnError</code> added and a little more clean-up from
+another pass over the code, everything gets a little simpler yet:</p>
+
+<pre class="code">store :: Entry -> IO Entry
+store e = do { writeFile (fname e) ((show e) ++ "\n")
+             ; return e }
+
+check_out :: TVar Holder -> IO Entry
+check_out h = atomically ( do { h' &lt;- readTVar h
+                              ; if locked h'
+                                then retry
+                                else writeTVar h (lock h')
+                              ; return $ entry h' } )
+
+check_in :: TVar Holder -> Entry -> IO ()
+check_in h' e = atomically ( do { h'' &lt;- readTVar h'
+                                ; if (locked h'')
+                                  then writeTVar h' (Holder e False)
+                                  else error "Programmer error." } )
+
+s_apply :: (Entry -> Entry) -> TVar Holder -> IO ()
+s_apply f h' = bracketOnError (check_out h')
+               (\e -> (store.f) e >>= (check_in h'))
+               (check_in h')</pre>
+
+<p>With <code>s_publish</code> as before, this does the right thing in the event of an error while writing:</p>
+
+<pre class="code">*Main> th &lt;- atomically ( newTVar (Holder (Entry "foo" False) False ))
+*Main> s_show th
+"Holder {entry = Entry {entry_id = \"foo\", published = False}, locked = False}"
+
+*Main> :! chmod -w entry-foo.hb
+*Main> do s_publish th
+*** Exception: entry-foo.hb: openFile: permission denied (Permission denied)
+*Main> s_show th
+"Holder {entry = Entry {entry_id = \"foo\", published = False}, locked = False}"
+
+*Main> :! chmod +w entry-foo.hb
+*Main> do s_publish th
+*Main> s_show th
+"Holder {entry = Entry {entry_id = \"foo\", published = True}, locked = False}"</pre>
+
+<h3>Whither <code>TMVar</code>?</h3>
+
+<p>From the <code>TMVar</code> source code comments:</p>
+
+<blockquote>A 'TMVar' is a synchronising variable, used for communication between concurrent threads.  It can be thought of as a a box, which may be empty or full.</blockquote>
+
+<p>The idea would be that when an <code>Entry</code> was locked, its <code>TMVar</code> "box" would be empty, to be filled with a <code>TVar</code> wrapping the new value after the operation was completed.  Other threads (e.g., threads rendering page views or feeds) need to be able to read values while output is being performed, so I don't think that a <code>TMVar</code> is what I'm after in this case.</p>

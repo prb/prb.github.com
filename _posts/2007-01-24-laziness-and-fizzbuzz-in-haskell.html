@@ -1,0 +1,43 @@
+---
+layout: post
+title: "Laziness and fizzbuzz in Haskell"
+permalink: laziness-and-fizzbuzz-in-haskell.html
+categories: [haskell, ruby, lazyevaluation, functionalprogramming]
+---
+<p>After peeking at <a href="http://weblog.raganwald.com/2007/01/dont-overthink-fizzbuzz.html">Reg</a>'s solution, I can't resist posting a <a href="http://tickletux.wordpress.com/2007/01/24/using-fizzbuzz-to-find-developers-who-grok-coding">fizzbuzz</a> implementation in Haskell (because Reg's looks stylistically like it should be written in an FP language of some flavor).  It's also an example of the surprising effectiveness of being lazy.  Some Haskell:</p>
+
+<pre class="code">module Main(main) where
+
+import List
+
+f :: Int -> String
+f x | (x `mod` 15 == 0) = " fizzbuzz"
+    | (x `mod` 5 == 0) = " buzz"
+    | (x `mod` 3 == 0) = " fizz"
+f 1 = "1"
+f x = ' ':(show x)
+
+main :: IO ()
+main = (putStr.concat) (map f [1..100])</pre>
+
+<p>Here's a slightly different version of the <tt>main</tt> function:</p>
+
+<pre class="code">main' :: IO ()
+main' = mapM_ putStr (map f [1..100])</pre>
+
+<p>So, which one is better?  Interestingly, if you crank up the <tt>100</tt> to <tt>10000000</tt> (10<sup>8</sup>), either one of those two versions runs in well under a minute, in &lt;2MB of (resident) memory, and presents roughly the same heap profile:</p>
+
+<p align="center"><img src="http://mult.ifario.us/files/fb2.png" /><br/><tt>main</tt></p>
+
+<p align="center"><img src="http://mult.ifario.us/files/fb1.png" /><br/><tt>main'</tt></p>
+
+<p>The <tt>main'</tt> version might naively appear to be faster than the <tt>main</tt> version, but this is <em>laziness</em> in action: a <tt>String</tt> is <tt>[Char]</tt>, i.e., a list of characters.  The list of characters passed to <tt>putStr</tt> in the <tt>main</tt> version is generated lazily, as are the <tt>IO</tt> actions in the <tt>main'</tt> version.  (In fact, the <tt>main</tt> version is faster at under 7 seconds to roughly 20 seconds for the <tt>main'</tt> version.)  As you would expect based on laziness, both programs begin producing output immediately upon execution.  Meanwhile, without laziness, the <tt>ruby</tt> version chews up gobs of memory and takes a long time.  (I got tired of waiting for it after about 30 minutes, at which point it was using 35M of resident memory without producing any output.)  The simplest possible ruby solution (<tt>for</tt> loop, <tt>if</tt>...<tt>elsif</tt>...<tt>else</tt>) runs in around 45 seconds and consumes &lt;2M of resident memory.</p>
+
+<p>As an aside, reproducing the precise flavor of Reg's solution would mean composing a list of functions, which is simply expressed in Haskell terms and wouldn't impact laziness.  If <tt>l</tt> is of type <tt>[Int -&gt; Int]</tt> (a list of functions that map integers to integers), then:</p>
+
+<pre class="code">foldr (.) id l</pre>
+
+<p>is the <tt>Int -&gt; Int</tt> that applies the composition of the elements of <tt>l</tt> on the left, i.e., <tt>last l</tt> is the first function applied.  Nonetheless, precisely the same solution (repeatedly applying a function parameterized by a modulus and a substitution) isn't as simply expressed because <tt>String</tt> and <tt>Int</tt> are distinct types.</p>
+
+<p><em>Update:</em> There is a <a href="http://programming.reddit.com/info/10d7w/comments/c10gz2">thread</a> going on <a href="http://programming.reddit.com">reddit</a> that has some terse Haskell versions, along with versions for a bunch of other languages.</p>
+

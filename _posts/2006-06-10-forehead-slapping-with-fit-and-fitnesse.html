@@ -1,0 +1,17 @@
+---
+layout: post
+title: "Forehead Slapping with Fit and FitNesse"
+permalink: forehead-slapping-with-fit-and-fitnesse.html
+categories: [fit, fitnesse, java, errors, debug, markup]
+---
+<p><a href="http://fit.c2.com/">Fit</a> is an acceptance testing framework that drives test plans off of tables in HTML documents, and <a href="http://www.fitnesse.org/">FitNesse</a> is a wiki for creating the test plans and viewing the reports.  Individual tests are composed of tables, and each table corresponds to a test fixture implemented as a Java class.</p>
+
+<p>As part of its nature as a wiki, FitNesse thinks of <a href="http://en.wikipedia.org/wiki/CamelCase">camel case</a> &#8220;words&#8221; as potential pages, and this sometimes clashes with, e.g., the naming of test fixtures or arguments in a test table.  FitNesse does this by appending a hyperlinked &#8220;?&#8221; to the end of the candidate page name, and when the HTML is exported to Fit for evaluation, the &#8220;?&#8221; goes with it.  In other words, <tt>FooBar</tt> in the wiki text is exported as <tt>FooBar?</tt> to Fit.  (The HTML tag for the hyperlink is stripped.)  The way to get FitNesse to <em>not</em> look at a word as a potential wiki page is to escape it, e.g., <tt>!-FooBar-!</tt>.  (And since there is no page that describes the markup that FitNesse uses, I figured this out by reading the source code.  It could also be inferred from the wiki markup <a href="http://www.fitnesse.org/FitNesse.TwoMinuteExample?edit">source</a> of an <a href="http://www.fitnesse.org/FitNesse.TwoMinuteExample">example</a>, but that's only marginally easier.)</p>
+
+<p>I ran into this with a long, fully-qualified class name in a table that was passed to a custom fixture, but when the fixture  tried to load the corresponding class, it wasn't able to find the class.  I looked at the exception trace, I looked at the wiki page source, and I looked at my fixture source.  Everything looked reasonable.  The FitNesse folks <a href="http://www.fitnesse.org/FitNesse/DebuggingFitNesseTables">suggest</a> debugging by putting in some <tt>System.err.println(...)</tt> statements, but I went ahead and set FitNesse to configure the Fit runner for remote debugging.  This is done by changing the <tt>COMMAND_PATTERN</tt> variable:</p>
+
+<pre class="code">!define COMMAND_PATTERN {java -agentlib:jdwp=... -xp %p %m}</pre>
+
+<p>where the <tt>...</tt> are the <a href="http://java.sun.com/j2se/1.5.0/docs/guide/jpda/conninv.html#jdwpoptions">options</a> that make sense for your config.  (This is for JSE&#160;5.)  I stepped through the fixture and inspected the classloader instance (a <tt>URLClassLoader</tt>) that I was using, and it appeared to be configured with an appropriate URL to find the class in question.  (This was particularly puzzling because the classloader was the one used to load a class in the same package as the class that I wanted to load, and as far as I can tell, the Fit runner does absolutely nothing fancy with class loading.)</p>
+
+<p>As you might imagine from above, the answer is that FitNesse exports the HTML, not the wiki source, and so the &#8220;?&#8221; after the class name was flowing along as part of the input to the method, and it somehow escaped my notice.  The solution was to properly validate input by using a regular expression and provide an informative error message if it failed, which I should have done in the first place, but I had to slap my forehead for taking so long to find that extra &#8220;?&#8221; lurking around.</p>

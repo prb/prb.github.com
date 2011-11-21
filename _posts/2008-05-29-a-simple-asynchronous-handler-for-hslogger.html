@@ -1,0 +1,76 @@
+---
+layout: post
+title: "A Simple Asynchronous Handler for hslogger"
+permalink: a-simple-asynchronous-handler-for-hslogger.html
+categories: [haskell, hlogger]
+---
+
+<p>The <a
+href="http://hackage.haskell.org/cgi-bin/hackage-scripts/package/hslogger">hslogger</a>
+package provides a few handlers, e.g., for files and for Syslog, but
+the implementation of the file logger uses an <code>MVar</code> as a
+lock for writing log events. This isn't a bad thing, per se, since the
+GHC runtime will do a good job of queuing waiters for that lock, but
+it had a noticable impact on performance for perpubplat when I added
+some initial logging.</p>
+
+<p>To decouple the log event dispatch and disk access, I whipped up a
+quick <code>AsyncLogHandler</code> (<a
+href="http://datapr0n.com/repos/perpubplat/src/Blog/BackEnd/AsyncLogHandler.hs">source</a>)
+that does the job. Here is a quick tour in snippets, starting with a
+base data structure:</p>
+
+<pre class="code">type Timestamp = String
+
+type LogMessage = String
+
+data AsyncLogHandler
+    = AsyncLogHandler { channel :: Chan (LogRecord, LogMessage, Timestamp)
+                      , level :: Priority }</pre>
+
+<p>An admittedly imperfect instantiation for the <code>LogHandler</code> type class:</p>
+
+<pre class="code">instance LogHandler AsyncLogHandler where
+    setLevel alh p = alh { level = p }
+    getLevel alh = level alh
+    emit alh lr msg = do { n &lt;- now
+                         ; writeChan (channel alh) $! (lr,msg,n) }
+    close _ = return () -- make this better</pre>
+
+<p>This is less than perfect because it doesn't deal with altering the
+priority level or closing the stream on the fly, but I'm not concerned
+with either of those things for the moment. (To make that work, I'd
+need an additional level of encapsulation on the <code>Chan</code>
+that wraps log messages and control requests.) I'm on the fence with
+the necessity of making the <code>writeChan</code> strict in the
+second argument, but I believe it's necessary to ensure that the
+timestamp is computed when the message is dispatched as opposed to
+when it's output.</p>
+
+<p>Setup just requires forking a lightweight thread to pull log messages out of the channel:</p>
+
+<pre class="code">asyncHandler :: Int -&gt; Handle -&gt; Priority -&gt; IO AsyncLogHandler
+asyncHandler n h pri = do { c &lt;- newChan
+                          ; forkIO $ append n 0 h c
+                          ; return $ AsyncLogHandler { channel = c
+                                                     , level = pri } }</pre>
+
+<p>And then a tail-recursive function to pull the events, format output, and
+periodically (every <code>n</code> messages) flush the stream:</p>
+
+<pre class="code">append :: Int -&gt; Int -&gt; Handle -&gt; Chan (LogRecord, LogMessage, Timestamp) -&gt; IO ()
+append n i h c = do { ((p,m),l,ts) &lt;- readChan c
+                    ; (hPutStrLn h $ ts ++ " [" ++ (show p) ++ "] " ++ l ++ " - " ++ m)
+                      `CE.catch` (printex h)
+                    ; if i == n then
+                          do { (hFlush h) `CE.catch` (printex h)
+                             ; append n 0 h c }
+                      else
+                          append n (i+1) h c }
+
+printex :: Handle -&gt; CE.Exception -&gt; IO ()
+printex h e = hPutStrLn System.IO.stderr $ "Error writing to log handle "
+              ++ (show h) ++ ": " ++ show e</pre>
+
+<p>And that's it.</p>
+

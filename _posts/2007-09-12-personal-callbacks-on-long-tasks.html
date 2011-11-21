@@ -1,0 +1,14 @@
+---
+layout: post
+title: "Personal Callbacks on Long Tasks"
+permalink: personal-callbacks-on-long-tasks.html
+categories: [productivity, macos, shell, growl]
+---
+<p>I have been running some relatively involved builds and computations from the command line, and I hate the attention-suck of coming back to the shell every so often to see if it's completed yet.  A command line quicky with <a href="http://growl.info/documentation/growlnotify.php"><code>growlnotify</code></a> comes in handy:</p>
+
+<pre class="code">$ long-running command &amp;&amp; \
+  growlnotify -s -m 'long-running command completed.' Done.</pre>
+
+<p>Which gives me one of these when the initial command completes:</p>
+
+<p align="center"><img src="http://mult.ifario.us/files/growlnotify.png" /></p>

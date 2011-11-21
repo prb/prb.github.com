@@ -1,0 +1,48 @@
+---
+layout: post
+title: "A Little Lesson on Laziness and Unsafety"
+permalink: a-little-lesson-on-laziness-and-unsafety.html
+categories: [perpubplat, haskell, ffi, fastcgi, laziness, segfault]
+---
+
+<p>I learned a good lesson about Haskell and unsafe IO today.</p>
+
+<p>As I added comment support to <a
+href="http://datapr0n.com/perpubplat">perpubplat</a>, I did a little
+performance testing on comment submission just to make sure that it
+would behave decently, and I started picking up sporadic segmentation
+faults under load with no discernible pattern.  The faults were
+occurring as the new comment was serialized to disk, which to the
+imperative programmer's eye, seems impossible, since the code that
+does the writing is plain vanilla Haskell code:</p>
+
+<pre class="code">write_ :: B.Item -> IO ()
+write_ i = do { let f = filename (B.internal_id i)
+              ; h &lt;- openFile f WriteMode
+              ; hPutStr h $ B.to_string i
+              ; hClose h }</pre>
+
+<p>On <a
+href="http://haskell.org/haskellwiki/IRC_channel"><code>#haskell</code></a>,
+<code>dcoutts</code> made the helpful suggestion to check for any
+foreign code, and thereby hangs a tale.  (The GHC documentation <a
+href="http://www.haskell.org/ghc/docs/latest/html/users_guide/wrong-compilee.html">makes</a>
+the same suggestion.)  Laziness means that computations may not be
+performed before their results are needed, so it's not enough to think
+about what's happening in the <code>write_</code> function; you also
+have to think about the computation that created the value that's
+passed to <code>write_</code>, and on and on.  With enough
+back-tracing, the data passed to <code>write_</code> had its roots in
+fields read from an HTTP request handled by FastCGI, and the root
+cause was buried in the implementation of the function that reads the
+form fields: a <code>ByteString</code> being built out of a hunk of
+memory allocated to a FastCGI structure
+using... <code>unsafeInterleaveIO</code>.  The segmentation fault was
+occurring when the evaluation of the <code>write_</code> function (on a
+background thread) was effectively trying to read that hunk of memory
+that had been freed back when request processing was completed.</p>
+
+<p>Copying the data in the request handling resolved the issue, but
+the FastCGI library should probably change slightly to insulate its
+clients from this issue.</p>
+

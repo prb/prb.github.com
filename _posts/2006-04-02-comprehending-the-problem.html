@@ -1,0 +1,58 @@
+---
+layout: post
+title: "Comprehending the Problem"
+permalink: comprehending-the-problem.html
+---
+<p><a href="http://en.wikipedia.org/wiki/List_comprehension">List comprehensions</a> are a programming language convenience but also an instance of a good way to think about solving some kinds of programming problems.  For example, consider the problem:</p>
+
+<blockquote>Given a set, define a function that returns its powerset, i.e., the set of all subsets.</blockquote>
+
+<p>For my purposes herein, the datatype for a set has a notion of membership, size, and enumeration.</p>
+
+<h3>Et tu, Brut&eacute;?</h3>
+<p>The brute force solution using recursion is roughly:</p>
+
+<blockquote><pre><small>Set powerset(Set s) {
+  if s == EmptySet {
+    return {EmptySet}
+  } else {
+    x = first element of s
+    y = powerset (s \ x)
+    return y union (apply (__ union {x}) to y) 
+}</small></pre></blockquote>
+
+<p>And this is far from efficient, since the powerset of a set of n elements has 2<sup>n</sup> elements which have a total of n2<sup>n-1</sup> elements between them:</p>
+
+<pre class="code"># elements in union over powerset =
+                       = sum (j*(n choose j),j=0 to n)
+                       = sum(j * n!/((n-j!)*j!),j=1 to n)
+                       = sum(n!/((n-(k+1))!*k!,k=0 to n-1)
+                       = n sum( (n-1)!/((n-1)-k)!*k!),k=0 to n-1)
+                       = n (1+1)<sup>n-1</sup> = n 2<sup>n-1</sup></pre>
+
+<h3>Thinking a Little</h3>
+
+<p>So how could thinking about comprehensions help things?  The idea is to use the definition (&#8220;set of all subsets&#8221;) to influence the implementation.  For example, to implement the <code>size</code> method on the powerset:</p>
+
+<pre class="code">Powerset implements Set {
+
+  Set _s
+
+  Powerset(Set s) {
+    _s = immutable copy of s
+  }
+
+  int size() {
+    return 2^_s.size
+  }
+}</pre>
+
+<p>The same goes for membership:</p>
+
+<pre class="code">boolean contains(e) {
+  return (e is a Set &amp;&amp; e is a subset of _s)
+}</pre>
+
+<p>The only item left would be generating an iterator that visits all elements of the powerset, but thinking in terms of comprehensions again suggests a good approach.  A subset of the source set is defined by a function that returns <tt>true</tt> if an element is in the set and <tt>false</tt> if not.  With the source set indexed by 0,..,n-1, this suggests an approach where each subset corresponds to a number between 0 and 2<sup>n</sup> in binary notation &#8212; 1 in the k<sup>th</sup> bit if the k<sup>th</sup> element is in the set.</p>
+
+<p>The bit vector encoding approach can be used to get a <a href="http://en.wikipedia.org/wiki/Generator_%28computer_science%29">generator</a>-style, recursion-free solution without necessarily encapsulating the powerset, but the encapsulation is equally important because of the frame of mind that it creates.  Thinking about what "is a subset" <em>means</em> is what actually <em>leads</em> to the encoding concept.</p>

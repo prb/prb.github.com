@@ -1,0 +1,389 @@
+##
+## BPEL 1.1 schema in Relax NG Compact Syntax
+## 
+## Translated from XML Schema version by Paul Brown <prb@fivesight.com>
+##
+namespace xml = "http://www.w3.org/XML/1998/namespace"
+datatypes xsd = "http://www.w3.org/2001/XMLSchema-datatypes"
+namespace bp11 = "http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+
+start =
+  element bp11:process {
+    attribute name { xsd:NCName },
+    attribute suppressJoinFailure { "yes"|"no" }?,
+    attribute targetNamespace { xsd:anyURI },
+    attribute queryLanguage { xsd:anyURI }?,
+    attribute expressionLanguage { xsd:anyURI }?,
+    attribute enableInstanceCompensation { "yes"|"no" }?,
+    attribute abstractProcess { "yes"|"no" }?,
+    attribute surpressJoinFailure { "yes"|"no" }?,
+    partnerLinks?,
+    partners?,
+    variables?,
+    correlationSets?,
+    faultHandlers?,
+    compensationHandler?,
+    eventHandlers?,
+    activity
+  }
+
+  partnerLinks = 
+    element bp11:partnerLinks {
+      partnerLink+
+    }
+
+  partnerLink =
+    element bp11:partnerLink {
+      attribute name { xsd:NCName },
+      attribute partnerLinkType { xsd:QName },
+      attribute myRole { xsd:NCName }?,
+      attribute partnerRole { xsd:NCName}?
+    }
+
+  partners = 
+    element bp11:partners {
+      partner+
+    }
+
+  partner =
+    element bp11:partner {
+      attribute name { xsd:NCName },
+      element bp11:partnerLink {
+        attribute name { xsd:NCName }
+      }+
+    }
+
+  variables =
+    element bp11:variables {
+      variable+
+    }
+
+  variable =
+    element bp11:variable {
+      attribute name { xsd:NCName },
+      ( attribute messageType  { xsd:QName }
+      | attribute type { xsd:QName }
+      | attribute element {xsd:QName })
+    }
+
+  correlationSets =
+    element bp11:correlationSets {
+      correlationSet+
+    }
+  
+  correlationSet =
+    element bp11:correlationSet {
+      attribute name { xsd:NCName },
+      attribute properties { list { xsd:QName } }
+    }
+  
+  faultHandlers =
+    element bp11:faultHandlers {
+      catch*,
+      catchAll?
+    }
+  
+  catch =
+    element bp11:catch {
+      attribute faultName { xsd:QName }?,
+      attribute faultVariable { xsd:NCName }?,
+      activityOrCompensate
+    }
+
+  catchAll =
+    element bp11:catchAll {
+      activityOrCompensate
+    }
+
+
+  compensationHandler =
+    element bp11:compensationHandler {
+      activityOrCompensate
+    }
+
+  activityOrCompensate =
+    activity
+    | compensate
+
+  eventHandlers =
+    element bp11:eventHandler {
+      onMessage*,
+      onAlarm*
+    }
+
+  onMessage =
+    element bp11:onMessage {
+      partner.atts,
+      attribute variable { xsd:NCName },
+      correlations,
+      activity
+    }
+
+  onAlarm =
+    element bp11:onAlarm {
+      duration.atts,
+      activity
+    }
+
+  duration.atts =
+    attribute for { xsd:string } |
+    attribute until { xsd:string }  
+
+  activity =
+    \empty
+    | invoke
+    | receive
+    | reply
+    | assign
+    | wait
+    | throw 
+    | terminate
+    | flow
+    | switch
+    | while
+    | sequence
+    | pick
+    | scope
+  
+  \empty =
+    element empty {
+      activity.atts,
+      linkRefs
+    }
+  
+  activity.atts =
+    attribute name { xsd:NCName }?,
+    attribute joinCondition { text }?,
+    attribute surpressJoinFailure { "yes"|"no" }?
+  
+  target.atts =
+    attribute linkName { xsd:NCName }
+
+  source.atts =
+    target.atts,
+    attribute transitionCondition { text }?
+  
+  linkRefs =
+    element bp11:target { target.atts }*,
+    element bp11:source { source.atts }*
+  
+  compensate =
+    element bp11:compensate {
+      activity.atts,
+      attribute scope { xsd:NCName },
+      links
+    }
+  
+  partner.atts =
+    attribute partnerLink { xsd:NCName },
+    attribute portType { xsd:QName },
+    attribute operation { xsd:NCName }
+  
+  invoke =
+    element bp11:invoke {
+      activity.atts,
+      partner.atts,
+      attribute inputVariable  { xsd:NCName }?,
+      attribute outputVariable { xsd:NCName }?,
+      linkRefs,
+      correlationsWithPattern?,
+      catch*,
+      catchAll?,
+      compensationHandler?
+    }
+    
+  correlations =
+    element bp11:correlations {
+      correlation+
+    }
+
+  correlationsWithPattern =
+    element bp11:correlations {
+      correlationWithPattern+
+    }
+ 
+  correlation.atts = 
+    attribute set { xsd:NCName },
+    attribute initiate { "yes"|"no" }?
+  
+  correlation =
+    element bp11:correlation {
+      correlation.atts
+    }
+  
+  correlationWithPattern = 
+    element bp11:correlation {
+      correlation.atts,
+      attribute pattern { "in" | "out" | "out-in" }?
+    }
+  
+  receive =
+    element bp11:receive {
+      activity.atts,
+      partner.atts,
+      attribute variable { xsd:NCName }?,
+      attribute createInstance  { "yes"|"no" }?,
+      linkRefs,
+      correlations?
+    }
+
+  reply =
+    element bp11:reply {
+      activity.atts,
+      partner.atts,
+      attribute variable { xsd:NCName }?,
+      attribute faultName { xsd:QName }?,
+      linkRefs,
+      correlations?
+    }
+
+  assign =
+    element bp11:assign {
+      activity.atts,
+      linkRefs,
+      copy+
+    }
+  
+  OTHER =
+    element * - bp11:* {
+      ( attribute * { text }
+        | text
+        | OTHER
+      )*
+    }
+
+  variable.att = 
+    attribute variable { xsd:NCName }
+
+##
+## NOTE:
+## -----
+## To enable the section 14.3 extension for queries on parts, add
+##
+##  attribute query { text }?
+## 
+## to the variable.part declaration below.
+##
+
+  variable.part =
+    variable.att,
+    attribute part { xsd:NCName}?
+
+  variable.property =
+    variable.att,
+    attribute property { xsd:QName }
+
+  copy = 
+    element bp11:copy {
+      element bp11:from {
+        ( variable.part
+        | variable.property
+        | ( attribute partnerLink { xsd:NCName },
+          attribute endpointReference { "myRole" | "partnerRole" } )
+        | attribute expression { text } )
+      | ( text* & OTHER* ) 
+      },
+      element bp11:to {
+        variable.part
+        | variable.property
+        | ( attribute partnerLink { xsd:NCName } )
+      }
+    }
+
+  wait =
+    element bp11:wait {
+      activity.atts,
+      duration.atts
+    }
+
+  throw =
+    element bp11:throw {
+      activity.atts,
+      attribute faultName { xsd:QName },
+      attribute faultVariable { xsd:NCName },
+      linkRefs
+    }
+  
+  terminate =
+    element bp11:terminate {
+      activity.atts,
+      linkRefs
+    }
+  
+  flow = 
+    element bp11:flow {
+      activity.atts,
+      linkRefs,
+      links?,
+      activity+
+    }
+
+  links =
+    element bp11:links {
+      link+
+    }
+  
+  link = 
+    element bp11:link {
+      attribute name { xsd:NCName }
+    }
+  
+  switch =
+    element bp11:switch {
+      activity.atts,
+      linkRefs,
+      case+,
+      otherwise?
+    }
+    
+  case = 
+    element bp11:case {
+      condition.att,
+      activity
+    }
+
+  condition.att =
+    attribute condition { xsd:string }
+    
+  otherwise =
+    element bp11:otherwise {
+      activity+
+    }
+
+  while = 
+    element bp11:while {
+      activity.atts,
+      condition.att,
+      linkRefs,
+      activity
+    }
+  
+  sequence =
+    element bp11:sequence {
+      activity.atts,
+      linkRefs,
+      activity+
+    }
+  
+  pick = 
+    element bp11:pick {
+      activity.atts,
+      attribute createInstance { "yes"|"no" },
+      linkRefs,
+      onMessage+,
+      onAlarm*
+    }
+  
+  scope =
+    element bp11:scope {
+      activity.atts,
+      attribute variableAccessSerializable { "yes"|"no" }?,
+      linkRefs,
+      variables?,
+      correlationSets?,
+      faultHandlers?,
+      compensationHandler?,
+      eventHandlers?,
+      activity
+    }
+  

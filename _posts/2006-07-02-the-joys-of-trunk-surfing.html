@@ -1,0 +1,10 @@
+---
+layout: post
+title: "The Joys of Trunk-Surfing"
+permalink: the-joys-of-trunk-surfing.html
+categories: [typo, wordpress, trunk, svn, opensource, release, rfc3023, xmlontheweb, theme, sidebar]
+---
+<p>A <a href="http://mult.ifario.us/articles/2005/12/10/wordpress-to-typo-migration-part-ii">while back</a>, in order to get the tag functionality in <a href="http://www.typosphere.org">Typo</a>, I upgraded from the stable download to the trunk.  Typo is in flagrant and ongoing violation of the &#8220;release early, release often&#8221; directive for software projects, but it's been a nearly painless experience each time.  Except for this last time.  To get an <a href="http://www.bofh.org.uk/articles/2006/04/16/write-your-own-typo-sidebar">update</a> to the Typo sidebar plugin API, I ran <tt>svn update</tt> on the Typo on my local machine, tweaked a couple of things, and tested; then I ran <tt>svn update</tt> on the Typo on my remote machine, and... crash.  The difference was the theme that I use on the production server, and I resorted to Google before fishing through the theme layouts for issues.  Ironically, I found a <a href="http://fak3r.com/?p=4">quick answer</a> on Phil Cryer's <a href="http://www.fak3r.com">blog</a> and had things back to (what passes for) normal in a few minutes.</p>
+
+<p>I say ironically for two reasons.  First, it's ironic for me to find the answer on Phil's blog because he just <a href="http://fak3r.com/?p=1">gave up</a> on Typo and went to WordPress over this very issue.  And <em>that</em> is ironic because I <a href="http://mult.ifario.us/articles/2005/11/26/migrated-to-typo">gave up</a> on Wordpress over a recurring annoyance with incorrectly set Media-type and encoding (see <a href="ftp://ftp.isi.edu/in-notes/rfc3023.txt">RFC3023</a> and Mark Pilgrim's <a href="http://www.xml.com/pub/a/2004/07/21/dive.html">discussion</a> for some background) where I had to trace through multiple noodles of PHP spaghetti code to fix it each time Wordpress shipped a new version.  (Each time, the upgrade was security related, so I felt obliged to apply it.)</p>
+

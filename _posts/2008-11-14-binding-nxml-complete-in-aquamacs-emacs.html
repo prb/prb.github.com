@@ -1,0 +1,29 @@
+---
+layout: post
+title: "Binding <code>nxml-complete</code> in Aquamacs Emacs"
+permalink: binding-nxml-complete-in-aquamacs-emacs.html
+categories: [xslt, nxml-mode, emacs, elisp, aquamacs]
+---
+
+<p>The folks who bundled up <a
+href="http://www.thaiopensource.com/nxml-mode/">nXML mode</a> for
+inclusion with <a href="http://aquamacs.org/">Aquamacs Emacs</a> did
+think to include the useful schemas bundled with nXML&#160;mode, e.g., for
+XSLT 1.0, but I can't figure out why they didn't bind
+<code>nxml-complete</code> (context-sensitive, schema-driven
+completion and suggestion) to a keystroke.  (If memory serves, <code>C-Return</code> used to work.)</p>
+
+<p>It's an easy fix, but I always forget just how to do it.  As a
+reminder to myself or a hint to others, the fix is to add the
+following to
+<code>~/Library/Preferences/Aquamacs&#160;Emacs/</code>:</p>
+
+<pre class="code">(add-hook 'nxml-mode-hook
+	  '(lambda ()
+	     (define-key nxml-mode-map "\C-c\C-c"
+	       'nxml-complete)))</pre>
+
+<p>My preference is for <code>C-c C-c</code> but yours may be
+different.  In any case, that's about as blissful as editing XSLT
+gets.</p>
+

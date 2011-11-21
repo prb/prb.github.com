@@ -1,0 +1,139 @@
+---
+layout: post
+title: "Migrating Radio to SnipSnap"
+permalink: migrating-radio-to-snipsnap.html
+---
+<p>This post describes a method for importing a <a href="http://radio.userland.com">Radio</a> weblog to <a href="http://www.snipsnap.org">SnipSnap</a> using XSLT and some elbow grease.  I arrived at this approach by creating a couple of straw-man entries in SnipSnap, exporting them to XML using the management facilities, and then examining the format.</p>
+
+<p>Thankfully, SnipSnap provides the ability to import content from an XML file in a specific format.  Radio stores local backups of each post in a somewhat reasonable XML format, so importing involves massaging the Radio XML backup files into a SnipSnap-friendly format.</p>
+
+<p>Radio stores the backups in the <code>backups/weblogArchive/posts</code> subdirectory of the Radio installation directory, and the content of each post is escaped and stored in the attribute <code>/table/string[@name='content']/@value</code> and the first order of business is to run an XSLT over the files to unescape this content and write it back out.  My choice for doing this was:</p>
+
+<pre class="code">&lt;xsl:template match="*"&gt;
+  &lt;xsl:copy&gt;
+    &lt;xsl:copy-of select="@*" /&gt;
+    &lt;xsl:apply-templates /&gt;
+  &lt;/xsl:copy&gt;
+&lt;/xsl:template&gt;
+  
+&lt;xsl:template match="string[@name='text']" priority="2"&gt;
+  &lt;content&gt;&lt;xsl:value-of select="@value"
+    disable-output-escaping="yes" /&gt;&lt;/content&gt; 
+&lt;/xsl:template&gt;</pre>
+
+<p>Using <code>disable-output-escaping</code> to generate markup is (justifiably) frowned on but necessary in this case, and it's up to you to ensure that any non-well-formed XML is cleaned up.  (E.g., undeclared entities such as <code>&amp;nbsp;</code> and <code>&amp;mdash;</code> or unmatched elements like <code>&lt;br&gt;</code>.)</p>
+
+<p>The next step is to take the files with the cleaned-up, unescaped markup and convert them into snips formatted for SnipSnap to import.  This involves some work to transform HTML markup into wiki markup, e.g.:</p>
+
+<pre class="code">&lt;xsl:template match="b|B|strong|STRONG|em|EM"&gt;__&lt;xsl:apply-templates /&gt;__&lt;/xsl:template&gt;</pre>
+
+<p>and some of this will depend on the way that the entries were marked up to begin with.</p>
+
+<p>SnipSnap labels the snip corresponding to a blog entry with the <code>yyyy-MM-dd</code> date and parent snip <code>space</code>, so the entry fragment template looks like:</p>
+
+<pre class="code">&lt;xsl:template match="/"&gt;
+  &lt;snip&gt;
+    &lt;name&gt;&lt;xsl:call-template name="extract-date"&gt;
+      &lt;xsl:with-param name="doc" select="/" /&gt;
+    &lt;/xsl:call-template&gt;&lt;/name&gt;
+    &lt;content&gt;&lt;xsl:apply-templates select="/table/string[@name='title']" /&gt;
+    &lt;xsl:apply-templates
+        select="/table/content" /&gt;&lt;/content&gt;
+    &lt;cTime&gt;&lt;/cTime&gt;
+    &lt;mTime&gt;&lt;/mTime&gt;
+    &lt;cUser&gt;prb&lt;/cUser&gt;
+    &lt;mUser&gt;prb&lt;/mUser&gt;
+    &lt;parentSnip&gt;start&lt;/parentSnip&gt;
+    &lt;backLinks&gt;&lt;/backLinks&gt;
+    &lt;snipLinks&gt;&lt;/snipLinks&gt;
+    &lt;labels&gt;&lt;/labels&gt;
+    &lt;attachments&gt;&lt;/attachments&gt;
+    &lt;viewCount&gt;0&lt;/viewCount&gt;
+    &lt;permissions&gt;Edit:Owner&lt;/permissions&gt;
+  &lt;/snip&gt;
+&lt;/xsl:template&gt;
+
+&lt;xsl:template match="string[@name='title']"&gt;1. &lt;xsl:value-of
+    select="@value" /&gt; {anchor:&lt;xsl:value-of 
+    select="@value" /&gt;}&lt;/xsl:template&gt;</pre>
+
+<p>Note that the "<code>prb</code>" should be replaced with your
+username.</p>
+
+<p>The date extraction is a little bit painful:</p>
+
+<pre class="code">&lt;xsl:template name="extract-date"&gt;
+  &lt;xsl:variable name="datestr" 
+      select="substring-after(string(/table/date[@name='when']/@value),', ')" /&gt;
+  &lt;xsl:variable name="day" select="substring-before($datestr,' ')" /&gt;
+  &lt;xsl:variable name="datestr2" select="substring-after($datestr,' ')" /&gt;
+  &lt;xsl:variable name="month"&gt;
+    &lt;xsl:choose&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Jan')"&gt;01&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Feb')"&gt;02&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Mar')"&gt;03&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Apr')"&gt;04&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'May')"&gt;05&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Jun')"&gt;06&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Jul')"&gt;07&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Aug')"&gt;08&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Sep')"&gt;09&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Oct')"&gt;10&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Nov')"&gt;11&lt;/xsl:when&gt;
+      &lt;xsl:when test="starts-with($datestr2,'Dec')"&gt;12&lt;/xsl:when&gt;
+    &lt;/xsl:choose&gt;
+  &lt;/xsl:variable&gt;
+  &lt;xsl:variable name="year" select="substring-before(substring-after($datestr2,' '),' ')" /&gt;
+  &lt;xsl:value-of select="$year" /&gt;-&lt;xsl:value-of select="$month" /&gt;-&lt;xsl:value-of select="$day" /&gt;
+&lt;/xsl:template&gt;</pre>
+
+<p>as is the replacement of any <code>{</code>, <code>}</code>,
+<code>[</code>, or <code>]</code> characters in the posts:</p>
+
+<pre class="code">&lt;xsl:template name="escape-chars"&gt;
+  &lt;xsl:param name="txt" /&gt;
+  &lt;xsl:choose&gt;
+    &lt;xsl:when test="contains($txt,'[')"&gt;&lt;xsl:value-of
+        select="substring-before($txt,'[')" /&gt;\[&lt;xsl:call-template
+        name="escape-chars"&gt;
+          &lt;xsl:with-param name="txt"
+              select="substring-after($txt,'[')" /&gt;
+        &lt;/xsl:call-template&gt;&lt;/xsl:when&gt;
+    <em>... And then similarly for the others ...</em>
+    &lt;xsl:otherwise&gt;&lt;xsl:value-of select="$txt" /&gt;&lt;/xsl:otherwise&gt;
+  &lt;/xsl:choose&gt;
+&lt;/xsl:template&gt;</pre>
+ 
+<p>Once this is done, then all of the snips need to be grouped
+together:</p>
+
+<pre class="code">&lt;snipspace&gt;
+  <em>... snips go here ...</em>
+&lt;/snipspace&gt;</pre>
+
+<p>and the snips with the same date (and thus the same name) need to
+have their content merged together.</p>
+
+<p>That should do it!  Just import the file through the management
+facility in SnipSnap, fix any errors that are there (which you'll have
+to do without any sort of debugging information), and it's done.</p>
+
+<h3>Addendum</h3>
+
+<p>I had to do some additional work with the data once I'd moved it into SnipSnap.</p>
+
+
+<p>First, I had to do some additional search/replace to ensure that
+all permalinks (anchors) were valid names, which entailed removing
+commas, apostrophes, and other non-name characters.  (The short
+summary would be that letters, numbers, periods, colons, and
+underscores are legal.)</p>
+
+<p>Second, I modified the regular expression in the
+<code>org.snipsnap.semanticweb.rss.Rssify</code> (line 58 in 0.4.2a)
+that chunks the posts for RSS purposes so that it splits on top-level
+headers only instead of on every header:</p>
+
+<pre class="code">pattern = compiler.compile(
+  "^[[:space:]]*(1)[[:space:]]+(.*?)$",
+  Perl5Compiler.MULTILINE_MASK);</pre>

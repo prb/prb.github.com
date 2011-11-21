@@ -1,0 +1,318 @@
+---
+layout: post
+title: "A Short Adventure with <code>simpleHTTP</code>"
+permalink: a-short-adventure-with-simplehttp.html
+categories: [tcp, http, haskell, macosx, linux, del.icio.us]
+---
+
+<p>I'll blog separately about adding support for some JavaScript-free
+<a href="http://del.icio.us">del.icio.us</a> and <a
+href="http://www.flickr.com">Flickr</a> chrome to perpubplat (look at
+the sidebar and the bottom of entries in the detail view), but like
+the <a
+href="http://mult.ifario.us/p/haskell-del-icio-us-and-json">experiment</a>
+with the del.icio.us JSON API, it had an interesting (to me at least)
+and unexpected turn with the Haskell <code>Network.HTTP</code> library
+not closing its connections on my development box and laptop but
+running just fine on a Linux server.</p>
+
+<h3>Too Many Open Files?</h3>
+
+<p>I fired up a local build of <a
+href="http://datapr0n.com/perpubplat">perpubplat</a> and let it run
+for a bit.  The hit rate was a little more aggressive than del.icio.us
+was happy with (<code>999</code> response codes), so I tapered it back
+and let the service run for a while.  After a couple of hours, the
+service crashed with a "too many open files" exception, and the only
+thing that could mean was that the connections to del.icio.us weren't
+getting closed properly.  A quick restart, a little wait, and there
+are a bunch of open connections to del.icio.us hanging around; here's
+a representative pair of open connections:</p>
+
+<pre>$ sudo lsof -u _www | grep perpubpla
+[...]
+perpubpla 52499 _www    6u  IPv4 0xa642e64        0t0      TCP \
+  coresaplenty:49364->badges1.del.vip.re1.yahoo.net:http (LAST_ACK)
+[...]
+perpubpla 52499 _www   22u  IPv4 0x9fa7270        0t0      TCP \
+  coresaplenty:49457->badges1.del.vip.re1.yahoo.net:http (TIME_WAIT)
+[...]</pre>
+
+<p>(My local Apache2 runs as the <code>_www</code> user.)  A quick
+check showed that the number is steadily increasing:</p>
+
+<pre class="code">$ while true; do sudo lsof -u _www | grep del.vip | wc -l; sleep 10; done
+[...]
+80
+83
+[...]
+150
+152
+[...]</pre>
+
+<p>My first thought was that I was being overly lazy in the code that
+connects to the remote services.  I added some strictness annotations
+in strategic places (enough to ensure that the response body was fully
+read), tinkered with relevant HTTP headers (e.g., <code>Connection:
+close</code>), and turned on debugging in the <a
+href="http://www.haskell.org/http/"><code>Network.HTTP</code></a>
+library, which just reported that it was closing streams.</p>
+
+<p>I polled folks on <a
+href="http://www.haskell.org/haskellwiki/IRC_channel">#haskell</a>,
+but it didn't appear that others were having the same issue.</p>
+
+<h3>Detour into TCP</h3>
+
+<p>Rather than suspect the <code>Network.HTTP</code> library (which is
+where the problem was), the hung connections led me to initially
+suspect the network layer, and I dug into the TCP exchange.  Here's a
+state chart from <a href="http://www.faqs.org/rfcs/rfc793.html">RFC
+793</a> that provides a non-normative explanation of proper TCP
+behavior:</p>
+
+<pre style="font-size: x-small;">                              +---------+ ---------\      active OPEN  
+                              |  CLOSED |            \    -----------  
+                              +---------+&lt;---------\   \   create TCB  
+                                |     ^              \   \  snd SYN    
+                   passive OPEN |     |   CLOSE        \   \           
+                   ------------ |     | ----------       \   \         
+                    create TCB  |     | delete TCB         \   \       
+                                V     |                      \   \     
+                              +---------+            CLOSE    |    \   
+                              |  LISTEN |          ---------- |     |  
+                              +---------+          delete TCB |     |  
+                   rcv SYN      |     |     SEND              |     |  
+                  -----------   |     |    -------            |     V  
+ +---------+      snd SYN,ACK  /       \   snd SYN          +---------+
+ |         |&lt;-----------------           ------------------>|         |
+ |   SYN   |                    rcv SYN                     |   SYN   |
+ |   RCVD  |&lt;-----------------------------------------------|   SENT  |
+ |         |                    snd ACK                     |         |
+ |         |------------------           -------------------|         |
+ +---------+   rcv ACK of SYN  \       /  rcv SYN,ACK       +---------+
+   |           --------------   |     |   -----------                  
+   |                  x         |     |     snd ACK                    
+   |                            V     V                                
+   |  CLOSE                   +---------+                              
+   | -------                  |  ESTAB  |                              
+   | snd FIN                  +---------+                              
+   |                   CLOSE    |     |    rcv FIN                     
+   V                  -------   |     |    -------                     
+ +---------+          snd FIN  /       \   snd ACK          +---------+
+ |  FIN    |&lt;-----------------           ------------------>|  CLOSE  |
+ | WAIT-1  |------------------                              |   WAIT  |
+ +---------+          rcv FIN  \                            +---------+
+   | rcv ACK of FIN   -------   |                            CLOSE  |  
+   | --------------   snd ACK   |                           ------- |  
+   V        x                   V                           snd FIN V  
+ +---------+                  +---------+                   +---------+
+ |FINWAIT-2|                  | CLOSING |                   | LAST-ACK|
+ +---------+                  +---------+                   +---------+
+   |                rcv ACK of FIN |                 rcv ACK of FIN |  
+   |  rcv FIN       -------------- |    Timeout=2MSL -------------- |  
+   |  -------              x       V    ------------        x       V  
+    \ snd ACK                 +---------+delete TCB         +---------+
+     ------------------------>|TIME WAIT|------------------>| CLOSED  |
+                              +---------+                   +---------+</pre>
+
+<p>Without any additional digging, the fact that the connections
+appeared to be hung in either of the final two states
+(<code>TIME_WAIT</code> or <code>LAST_ACK</code>) should have alerted
+me to the actual problem, as should the fact that the connection in
+the <code>TIME_WAIT</code> state failed to time out even after a long
+period of time (e.g., 30 minutes).  But I didn't see it yet, so I kept
+digging.</p>
+
+<p>With the aid of <a
+href="http://www.tcpdump.org/"><code>tcpdump</code></a> and <a
+href="http://www.wireshark.org/"><code>wireshark</code></a>, the
+interaction that hangs in the <code>LAST_ACK</code> state:</p>
+
+<pre>perpubpla 52499 _www    6u  IPv4 0xa642e64        0t0      TCP \
+  coresaplenty:49364->badges1.del.vip.re1.yahoo.net:http (LAST_ACK)</pre>
+
+<pre style="font-size: x-small;">|29.402   |         SYN       |                   |Seq = 0 Ack = 3900749235
+|         |(49364)  ------------------>  (80)     |
+|29.500   |         SYN, ACK  |                   |Seq = 0 Ack = 1
+|         |(49364)  &lt;------------------  (80)     |
+|29.500   |         ACK       |                   |Seq = 1 Ack = 1
+|         |(49364)  ------------------>  (80)     |
+|29.501   |         PSH, ACK - Len: 120           |Seq = 1 Ack = 1
+|         |(49364)  ------------------>  (80)     |
+|29.620   |         PSH, ACK - Len: 373           |Seq = 1 Ack = 121
+|         |(49364)  &lt;------------------  (80)     |
+|29.620   |         PSH, ACK - Len: 5             |Seq = 374 Ack = 121
+|         |(49364)  &lt;------------------  (80)     |
+|29.620   |         FIN, ACK  |                   |Seq = 379 Ack = 121
+|         |(49364)  &lt;------------------  (80)     |
+|29.620   |         ACK       |                   |Seq = 121 Ack = 374
+|         |(49364)  ------------------>  (80)     |
+|29.620   |         ACK       |                   |Seq = 121 Ack = 379
+|         |(49364)  ------------------>  (80)     |
+|29.620   |         ACK       |                   |Seq = 121 Ack = 380
+|         |(49364)  ------------------>  (80)     |
+|29.621   |         FIN, ACK  |                   |Seq = 121 Ack = 380
+|         |(49364)  ------------------>  (80)     |
+|29.722   |         ACK       |                   |Seq = 380 Ack = 122
+|         |(49364)  &lt;------------------  (80)     |</pre>
+
+<p>According to the statechart and the RFC, this looks acceptable.</p>
+
+<p>As for the one that hangs in the <code>TIME_WAIT</code> state:</p>
+
+<pre>perpubpla 52499 _www   22u  IPv4 0x9fa7270        0t0      TCP \
+  coresaplenty:49457->badges1.del.vip.re1.yahoo.net:http (TIME_WAIT)</pre>
+
+<pre style="font-size: x-small;">|189.205  |         SYN       |                   |Seq = 0 Ack = 1062078327
+|         |(49457)  ------------------>  (80)     |
+|189.308  |         SYN, ACK  |                   |Seq = 0 Ack = 1
+|         |(49457)  &lt;------------------  (80)     |
+|189.308  |         ACK       |                   |Seq = 1 Ack = 1
+|         |(49457)  ------------------>  (80)     |
+|189.308  |         PSH, ACK - Len: 120           |Seq = 1 Ack = 1
+|         |(49457)  ------------------>  (80)     |
+|189.507  |         ACK       |                   |Seq = 1 Ack = 121
+|         |(49457)  &lt;------------------  (80)     |
+|189.529  |         PSH, ACK - Len: 373           |Seq = 1 Ack = 121
+|         |(49457)  &lt;------------------  (80)     |
+|189.529  |         PSH, ACK - Len: 5             |Seq = 374 Ack = 121
+|         |(49457)  &lt;------------------  (80)     |
+|189.529  |         FIN, ACK  |                   |Seq = 379 Ack = 121
+|         |(49457)  &lt;------------------  (80)     |
+|189.529  |         ACK       |                   |Seq = 121 Ack = 374
+|         |(49457)  ------------------>  (80)     |
+|189.529  |         ACK       |                   |Seq = 121 Ack = 379
+|         |(49457)  ------------------>  (80)     |
+|189.529  |         ACK       |                   |Seq = 121 Ack = 379
+|         |(49457)  ------------------>  (80)     |
+|189.529  |         FIN, ACK  |                   |Seq = 121 Ack = 379
+|         |(49457)  ------------------>  (80)     |
+|189.529  |         FIN, ACK  |                   |Seq = 121 Ack = 380
+|         |(49457)  ------------------>  (80)     |
+|189.632  |         ACK       |                   |Seq = 380 Ack = 122
+|         |(49457)  &lt;------------------  (80)     |</pre>
+
+<p>As with the connection hung in the <code>LAST_ACK</code> state,
+this also looks to be within the behavior prescribed by the statechart
+and RFC.</p>
+
+<p>This issues occurs both on my primary development box at home and
+on my laptop, both Intel hardware with Mac OS X 10.5.1, but on the
+(virtual) server that hosts this blog (Linux 2.6 kernel), the same
+code, libraries, and GHC version exhibit no problems.</p>
+
+<h3>The Actual Problem</h3>
+
+<p>Finger-tracing the code for the <code>simpleHTTP</code> function in
+the <code>Network.HTTP</code> module leads down into the
+<code>Network.TCP</code> module, and when I finally read the code, I
+kicked myself for the detour with packet sniffing.  Here is the full
+text for the <code>close</code> function for the TCP stream with the
+issue highlighted in red:</p>
+
+<pre class="code">close ref = 
+    do { c &lt;- readIORef (getRef ref)
+       ; <span style="background: #ff8080;">closeConn c `Exception.catch` (\_ -> return ())</span>
+       ; writeIORef (getRef ref) ConnClosed
+       }
+    where
+        -- Be kind to peer &amp; close gracefully.
+        closeConn (ConnClosed) = return ()
+        closeConn (MkConn sk addr [] _) =
+            do { shutdown sk ShutdownSend
+               ; suck ref
+               ; shutdown sk ShutdownReceive
+               ; sClose sk
+               }
+
+        suck :: Connection -> IO ()
+        suck cn = readLine cn >>= 
+                  either (\_ -> return ()) -- catch errors &amp; ignore
+                         (\x -> if null x then return () else suck cn)</pre>
+
+<p>The <code>Exception.catch</code> will trap any exception that
+occurs during <code>connClose</code>, but that doesn't mean that the
+<code>connClose</code> function has completed fully and closed the
+socket with <code>sClose</code>.</p>
+
+<p>Here's a quick experiment to confirm my suspicions.  First, some
+finer grained exception trapping and reporting:</p>
+
+<pre class="code">close ref = 
+    do { c &lt;- readIORef (getRef ref)
+       ; <span style="background: #ffff80;">closeConn c `Exception.catch` (flag "0")</span>
+       ; writeIORef (getRef ref) ConnClosed
+       }
+    where
+        -- Be kind to peer &amp; close gracefully.
+        closeConn (ConnClosed) = return ()
+        closeConn (MkConn sk addr [] _) =
+            do { <span style="background: #ffff80;">( shutdown sk ShutdownSend >> suck ref) `Exception.catch` (flag "1")</span>
+               ; <span style="background: #ffff80;">shutdown sk ShutdownReceive `Exception.catch` (flag "2")</span>
+               ; sClose sk
+               }
+
+        flag s e = print $ s ++ ":" ++ show e
+
+        suck :: Connection -> IO ()
+        suck cn = readLine cn >>= 
+                  either (\_ -> return ()) -- catch errors &amp; ignore
+                         (\x -> if null x then return () else suck cn)</pre>
+
+<p>And a <code>ghci</code> session to try it out:</p>
+
+<pre class="code">$ cd ~/work/haskell-http/HTTP-3001.0.4
+$ ghci Network.HTTP
+GHCi, version 6.8.2: http://www.haskell.org/ghc/  :? for help
+[.. startup stuff ...]
+*Network.HTTP> :set prompt "> "
+> :m + Data.Maybe Network.URI
+> let teh_goog = fromJust $ parseURI "http://www.google.com"
+> resp &lt;- simpleHTTP $ Request teh_goog GET [] ""
+<span style="background: #ffff80;">"2:shutdown: invalid argument (Socket is not connected)"</span>
+Right HTTP/1.1 200 OK 
+Cache-Control: private
+Content-Type: text/html; charset=ISO-8859-1
+Set-Cookie: PREF=ID=[...]:TM=[...]:LM=[...]:S=[...]; \
+  expires=Sun, 07-Feb-2010 05:02:22 GMT; path=/; domain=.google.com
+Server: gws
+Transfer-Encoding: chunked
+Date: Fri, 08 Feb 2008 05:02:22 GMT
+Connection: Close
+Content-Length: 5367
+
+
+</pre>
+
+<p>Aha &#8212; the highlighted line shows that the code is exiting
+<em>before</em> closing the socket with <code>sClose</code>. Without
+the change to trap the exceptions within the <code>closeConn</code>
+function, the connection to Google would have remained open, but now:</p>
+
+<pre class="code">> :! lsof | grep ghc | grep goog
+></pre>
+
+<p>With a little clean-up, we've got a patch ready to submit:</p>
+
+<pre class="code">close ref = 
+    do { c &lt;- readIORef (getRef ref)
+       ; closeConn c
+       ; writeIORef (getRef ref) ConnClosed
+       }
+    where
+        -- Be kind to peer &amp; close gracefully.
+        closeConn (ConnClosed) = return ()
+        closeConn (MkConn sk addr [] _) =
+            mapM_ (flip Exception.catch $ \_ -> return ())
+                  [ shutdown sk ShutdownSend
+                  , suck ref
+                  , shutdown sk ShutdownReceive
+                  , sClose sk ]
+
+        suck :: Connection -> IO ()
+        suck cn = readLine cn >>= 
+                  either (\_ -> return ()) -- catch errors &amp; ignore
+                         (\x -> if null x then return () else suck cn)</pre>
+
+

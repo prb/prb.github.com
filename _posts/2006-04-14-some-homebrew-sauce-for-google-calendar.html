@@ -1,0 +1,32 @@
+---
+layout: post
+title: "Some Homebrew Sauce for Google Calendar"
+permalink: some-homebrew-sauce-for-google-calendar.html
+categories: [e4x, atom, googlecalendar]
+---
+<p>As I looked at some <a href="http://torrez.us/archives/2006/04/14/432/">cool ideas</a> from <a href="http://torrez.us/">Elias Torrez</a> (<a href="http://www-03.ibm.com/developerworks/blogs/page/jasnell?entry=ok_i_think_i_like">via</a> <a href="http://www-03.ibm.com/developerworks/blogs/page/jasnell">James Snell</a>), it occurred to me that I could make some homebrew sauce for Google Calendar to address one of my <a href="http://mult.ifario.us/articles/2006/04/15/less-vanilla-and-more-sauce-please">wants</a>, namely a meeting time chooser for one or more participants.  Here's how it could work.</p>
+
+<p>In the <a href="http://www.ietf.org/rfc/rfc4287.txt">Atom</a> feed for the calendar, there are elements in a Google namespace like so:</p>
+
+<pre class="code">&lt;feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
+      xmlns:gd="http://schemas.google.com/g/2005"&gt;
+  [...]
+  &lt;entry&gt;
+    [...]
+    &lt;gd:when startTime="2006-04-03T16:00:00.000Z"
+             endTime="2006-04-03T17:00:00.000Z"/&gt;
+  &lt;/entry&gt;
+&lt;/feed&gt;</pre>
+
+<p>We'd want a query that accepted a tuple of URLs for Atom calendar feeds and performed an iterative merge:</p>
+
+<ol>
+  <li>Copy the <code>&lt;gd:when&gt;</code> elements from the first feed on the list into working storage of some kind.  We'll write a <code>@startTime</code> and <code>@endTime</code> pair as <code>(s,e)</code> in what follows.</li>
+  <li>Iterate through the elements of the next feed in the list; suppose that the current one is <code>(x,y)</code>.  If there is an element <code>(w,z)</code> in the scratch list such that <code>z&lt;x</code> and <code>w&lt;y</code>, replace <code>(x,y)</code> by <code>(min(x,w),max(y,z))</code>.  Otherwise, add <code>(x,y)</code> to the scratch list.</li>
+  <li>Repeat #2 with each feed.</li>
+</ol>
+
+<p>As additional sugar, one additional feed could be used to represent desired days or time ranges by exclusion.  The combined feed would contain the collective busy times for the group, and the publicly visible Atom feeds for each calendar would be all that would be needed.</p>
+
+<p>This could be done in a browser with a script written in <a href="http://www.ecma-international.org/publications/standards/Ecma-357.htm">E4X</a>, with the caveat of having to perform date arithmetic.  (The XML Schema <a href="http://www.w3.org/TR/xmlschema-2/#isoformats">variant</a> of <a href="http://www.iso.org/iso/en/prods-services/popstds/datesandtime.html">ISO&#160;8601</a> date-times compare cleanly as strings, but the JavaScript <a href="http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference:Global_Objects:Date">Date</a> object is based on a different syntax.)  <a href="http://www.w3.org/TR/xquery/">XQuery</a> supports <a href="http://www.w3.org/TR/xquery-operators/#dateTime-arithmetic">operations</a> and <a href="http://www.w3.org/TR/xquery-operators/#comp.duration.datetime">comparisons</a> on <a href="http://www.w3.org/TR/xmlschema-2/#dateTime"><code>dateTime</code></a> and <a href="http://www.w3.org/TR/xmlschema-2/#duration"><code>duration</code></a> values, so it would be another good candidate.  As would Ruby, thanks to <a href="http://rubyforge.org/projects/atom/">Atom support</a> and <a href="http://www.ruby-doc.org/core/classes/DateTime.html">date support</a> in a compatible format.</p>
