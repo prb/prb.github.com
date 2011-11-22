@@ -14,7 +14,7 @@ For older posts, go to the [archives]({{ site.url }}/archive.html).
 
 ## Other
 
-I work at [Multifarious, Inc.](http://mult.ifario.us).
+I work at [Multifarious, Inc.](http://mult.ifario.us) and [FasterXML](http://fasterxml.com).
 
 You can also find me:
 
