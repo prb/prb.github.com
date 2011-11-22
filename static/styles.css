@@ -157,7 +157,7 @@ div > h2 {
 
 div.entry {
 	color: black;
-	font: "Times", Palatino, Garamond, "Avant Garde", serif;
+	font-family: "Times", Palatino, Garamond, "Avant Garde", serif;
 }
 
 div.entry h3,h4,h5 {
@@ -176,52 +176,26 @@ div.comment blockquote {
 	padding: 5px 10px;
 }
 
-div.entry > pre.code,
-div.comment_body_preview > pre.code,
-div.comment > pre.code {
+div.entry > pre.code {
 	margin-right: 10px;
-	color: #0c067f;
+	color: #0c4006;
 	background-color: #f0f0f0;
 	margin-left: 10px;
 	padding: 5px;
 	border-style: solid;
 	border-width: thin;
-	font-size: x-small;
-	font-family: "Andale Mono", "Courier New", Courier, mono;		
-}
-
-p.tags {
-	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	font-size: small;
+	font-family: Courier, mono;		
 }
 
 div.entry > p code {
-	color:  #0c067f;
-	font-family: "Andale Mono", "Courier New", Courier, mono;
+	color:  #0c4006;
+	font-family: Courier, mono;
 }
 
 div.entry li code {
-	color:  #0c067f;
-	font-family: "Andale Mono", "Courier New", Courier, mono;	
-}
-
-div.comment {
-	padding: 5px;
-}
-
-div.comment > p {
-	padding-top: 0px;
-	margin-top: 0px;
-}
-
-div.commentwrapper {
-	font: small "Lucida Grande", Lucida, Verdana, sans-serif;
-}
-
-div.commentwrapper > p.commentattribution {
-	border-bottom-style: solid;
-	border-bottom-width: thin;
-	font: small "Lucida Grande", Lucida, Verdana, sans-serif;
-	padding-top: 1em;
+	color:  #0c4006;
+	font-family: Courier, mono;	
 }
 
 div#footer {
@@ -231,22 +205,6 @@ div#footer {
 	font: x-small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
 }
 
-div#comment_entry h3 {
-	font-weight: normal;
-	font-style: normal;
-	color: #7f7f7f;
-	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
-}
-
-p.comment_datum, p.comment_body {
-	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
-}
-
-.required {
-	color: #cc0000;
-	font-weight: bold;
-}
-
 img.cc-badge {
 	vertical-align: middle;
 }
@@ -254,13 +212,4 @@ img.cc-badge {
 p > em {
 	font-weight: bold;
 	font-style: italic;
-}
-
-h3.meta_heading {
-	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
-	border-bottom: 1px solid #666;
-	color: #666;
-	font-weight: lighter;
-	margin-bottom: 0px;
-	padding-bottom: 0px;
 }
