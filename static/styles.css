@@ -1,5 +1,5 @@
 /* @override http://localhost:4000/static/styles.css */
-@import url(http://fonts.googleapis.com/css?family=Droid+Sans);
+@import url(http://fonts.googleapis.com/css?family=Droid+Sans|Atomic+Age|Terminal+Dosis:200);
 
 a:link, a:visited {
 	color: #224466;
@@ -47,7 +47,7 @@ ul.formatting li {
 
 div#header h1 {
 	margin-bottom: 3px;
-	font-family: 'Droid Sans', sans-serif;
+	font-family: 'Atomic Age', cursive;
 	color: #337;
 	font-size: 3em;
 	margin-top: 10px;
@@ -119,44 +119,6 @@ div#posts h3.sharing {
 	font: smaller "Lucida Grande", Lucida, Verdana, sans-serif;
 }
 
-div#sidebar {
-	padding-top: 0px;
-	margin-top: 0px;
-	width: 250px;
-	float: right;
-	padding-left: 15px;
-	border-left-style: dotted;
-	border-left-color: #cccccc;
-	border-left-width: thin;
-	font-size: 0.9em;
-}
-
-div#sidebar li.tag {
-	display: inline;
-	list-style-type: none;
-}
-
-div#sidebar h3 {
-	margin-bottom: 3px;
-	padding-bottom: 0px;
-	font-family: "Lucida Grande", Lucida, Verdana, sans-serif;
-	color: gray;
-	font-weight: normal;
-	font-style: normal;
-}
-
-div#sidebar p {
-	margin-top: 0px;
-}
-
-div#sidebar ul {
-	margin-top: 0px;
-}
-
-div.sidebarcontents {
-	font: x-small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
-}
-
 div#bottomnav {
 	padding : 5px;
 	border: 1px dotted green;
@@ -182,13 +144,13 @@ div.entry_wrapper > h2 > a {
 	color: gray;
 	text-decoration: none;
 	font-variant: normal;
-	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	font-family: "Terminal Dosis", "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
 }
 
 div > h2 {
 	padding-bottom: 0px;
 	margin-bottom: 0px;
-	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+	font-family: "Terminal Dosis", "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
 	font-weight: lighter;
 
 }
@@ -201,7 +163,7 @@ div.entry {
 div.entry h3,h4,h5 {
 	font-weight: normal;
 	font-style: normal;
-	font-family: "Lucida Grande", Lucida, Verdana, sans-serif;
+	font-family: "Terminal Dosis", "Lucida Grande", Lucida, Verdana, sans-serif;
 	color: gray;
 }
 
@@ -226,11 +188,6 @@ div.comment > pre.code {
 	border-width: thin;
 	font-size: x-small;
 	font-family: "Andale Mono", "Courier New", Courier, mono;		
-}
-
-span.tagcloud {
-	font-family: "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
-	border-width: 2px;
 }
 
 p.tags {
@@ -267,10 +224,6 @@ div.commentwrapper > p.commentattribution {
 	padding-top: 1em;
 }
 
-div#sidebar > span.tagcloud > a {
-	text-decoration: none;
-}
-
 div#footer {
 	clear : both;
 	border-top: thin dotted #cccccc;
@@ -294,163 +247,8 @@ p.comment_datum, p.comment_body {
 	font-weight: bold;
 }
 
-form textarea, form input {
-	border: 1px solid #7f7f7f;
-}
-
-form textarea.body_entry, form input.datum_entry {
-	background-color: #ffffff;
-	border: 1px solid #7f7f7f;
-}
-
-form textarea.body_entry:focus, form input.datum_entry:focus {
-	background-color: #f0f0f0;
-	border: 1px solid #000000;
-}
-
-form textarea.body_entry {
-	width: 95%;
-}
-
-form input.comment_submit:focus {
-	background-color: #333333;
-	color: #ffffff;
-}
-
-div.comment_body_preview {
-	font-size: small;
-	width: 570px;
-	padding-left: 10px;
-	padding-right: 10px;
-	border: 1px solid #7f7f7f;
-}
-
-div.comment_body_preview > blockquote {
-	border-left: 2px solid #000080;
-	padding-left: 10px;
-	padding-right: 10px;
-	margin-right: 10px;
-	margin-left: 10px;
-}
-
-input.post_comment_submit {
-	background-color: #007f00;
-	color: white;
-}
-
-input.edit_comment_submit {
-	background-color: #00007f;
-	color: white;
-	margin-top: 5px;
-}
-
-input.delete_comment_submit {
-	background-color: #7f0000;
-	color: white;
-	margin-top: 5px;
-}
-
-table.comment_wrapper {
-	border: 1px dotted #7f7f7f;
-}
-
-.comment_preview_fields {
-	color: #7f7f7f;
-	font: small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
-}
-
-td.action_cell {
-	vertical-align: bottom;
-}
-
 img.cc-badge {
 	vertical-align: middle;
-}
-/*
-Flickr stuff...
-
-Images are wrapped in divs classed "flickr_badge_image" with ids
-"flickr_badge_imageX" where "X" is an integer specifying ordinal position.
-Below are some styles to get you started!
-*/
-#flickr_badge_uber_wrapper {
-	text-align:center;
-	margin-top: 1em;
-}
-
-
-.flickr_badge_image {
-	margin:0 10px 10px 10px;
-	border: 2px solid black;
-	float: left;
-	margin: 5px;
-}
-
-#flickr_badge_source {
-	text-align:left;
-	margin:0 10px 0 10px;}
-	
-#flickr_www {
-	display:block;
-	padding:0 10px 0 10px !important;
-	font: 11px Arial, Helvetica, Sans serif !important;
-	color:#3993ff !important;
-	float: right;
-	clear: left;
-}
-
-#flickr_badge_uber_wrapper a:hover,
-#flickr_badge_uber_wrapper a:link,
-#flickr_badge_uber_wrapper a:active,
-#flickr_badge_uber_wrapper a:visited {
-	text-decoration:none !important;
-	background:inherit !important;
-	color:#3993ff;
-}
-
-#flickr_badge_source {
-	padding:0 !important;
-	font: 11px Arial, Helvetica, Sans serif !important;
-	color:#666666 !important;
-}
-
-/*
-del.icio.us stuff
-*/
-div.delicious_chrome {
-	border: 1px #808080 dotted;
-	background-color: #f0f0f0;	
-	margin-right: 15px;
-	margin-left: 15px;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	padding-right: 10px;
-	padding-left: 10px;
-}
-
-div.delicious_chrome > p {
-	font: x-small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
-	padding: 0px;
-	margin: 0px;
-}
-
-div#thoughts {
-	font: x-small "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
-}
-
-p.thought_group {
-	font-size: small;
-	color: #a0a0a0;
-	margin-bottom: 0px;
-}
-
-p.thought {
-	margin-bottom: 3px;
-	margin-left: 5px;
-}
-
-span.tweet_stamp {
-	color: #7f7f7f;
 }
 
 p > em {
